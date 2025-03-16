@@ -109,306 +109,188 @@ const RootCauseAnalysis = () => {
     loadMetrics();
   }, []);
 
-  const generateDetailedAnalysis = (type) => {
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      const analyses = {
-        totalDefects: {
-          title: "Total Defects Analysis",
-          summary: {
-            trend: "Decreasing",
-            percentageChange: "-12%",
-            impactLevel: "Medium"
-          },
-          distribution: {
-            categories: ["UI/UX", "Backend", "Integration", "Database", "Security"],
-            values: [35, 25, 20, 15, 5]
-          },
-          rootCauses: [
-            { cause: "Input Validation", percentage: 35, impact: "High", trend: "decreasing" },
-            { cause: "Error Handling", percentage: 25, impact: "Medium", trend: "stable" },
-            { cause: "Configuration Issues", percentage: 20, impact: "Medium", trend: "decreasing" },
-            { cause: "Database Queries", percentage: 20, impact: "High", trend: "improving" }
-          ],
-          forecast: {
-            nextMonth: 225,
-            confidence: 85,
-            trend: "improving",
-            factors: [
-              "Recent implementation of automated testing",
-              "Enhanced code review process",
-              "Developer training program effectiveness"
-            ]
-          },
-          recommendations: [
-            {
-              title: "Expand Test Coverage",
-              description: "Increase unit test coverage to 85% across all modules",
-              impact: "High",
-              effort: "Medium",
-              timeframe: "4 weeks"
-            },
-            {
-              title: "Code Quality Gates",
-              description: "Implement stricter quality gates in CI/CD pipeline",
-              impact: "High",
-              effort: "Low",
-              timeframe: "2 weeks"
-            },
-            {
-              title: "Documentation Update",
-              description: "Refresh technical documentation and API specs",
-              impact: "Medium",
-              effort: "Medium",
-              timeframe: "3 weeks"
-            }
-          ],
-          timeline: {
-            past: [
-              { month: "Jan", value: 289 },
-              { month: "Feb", value: 278 },
-              { month: "Mar", value: 245 }
-            ],
-            forecast: [
-              { month: "Apr", value: 225 },
-              { month: "May", value: 210 },
-              { month: "Jun", value: 200 }
-            ]
-          },
-          riskAssessment: {
-            overall: "Medium",
-            factors: [
-              { name: "Code Quality", level: "Medium" },
-              { name: "Testing Coverage", level: "Improving" },
-              { name: "Technical Debt", level: "Medium" }
-            ]
-          }
-        },
-        majorIssues: {
-          title: "Major Issues Analysis",
-          summary: {
-            trend: "Critical Attention",
-            percentageChange: "+28%",
-            impactLevel: "High"
-          },
-          distribution: {
-            categories: ["System Outages", "Data Loss", "Performance", "Security", "Integration"],
-            values: [35, 25, 20, 15, 5]
-          },
-          rootCauses: [
-            { cause: "Infrastructure Scaling", percentage: 35, impact: "Critical", trend: "increasing" },
-            { cause: "Database Performance", percentage: 25, impact: "High", trend: "increasing" },
-            { cause: "Memory Leaks", percentage: 20, impact: "High", trend: "stable" },
-            { cause: "API Timeouts", percentage: 20, impact: "High", trend: "increasing" }
-          ],
-          forecast: {
-            nextMonth: 98,
-            confidence: 92,
-            trend: "requires immediate action",
-            factors: [
-              "Increasing user load on systems",
-              "Database scaling limitations",
-              "Memory management issues"
-            ]
-          },
-          recommendations: [
-            {
-              title: "Infrastructure Scale-Up",
-              description: "Implement auto-scaling for critical services",
-              impact: "Critical",
-              effort: "High",
-              timeframe: "1 week"
-            },
-            {
-              title: "Database Optimization",
-              description: "Optimize high-impact database queries and implement caching",
-              impact: "High",
-              effort: "High",
-              timeframe: "2 weeks"
-            },
-            {
-              title: "Memory Profiling",
-              description: "Conduct thorough memory profiling and optimization",
-              impact: "High",
-              effort: "Medium",
-              timeframe: "1 week"
-            }
-          ],
-          timeline: {
-            past: [
-              { month: "Jan", value: 65 },
-              { month: "Feb", value: 82 },
-              { month: "Mar", value: 91 }
-            ],
-            forecast: [
-              { month: "Apr", value: 98 },
-              { month: "May", value: 105 },
-              { month: "Jun", value: 112 }
-            ]
-          },
-          riskAssessment: {
-            overall: "Critical",
-            factors: [
-              { name: "System Stability", level: "Critical" },
-              { name: "Performance Impact", level: "High" },
-              { name: "Business Continuity", level: "High" }
-            ]
-          }
-        },
-        serviceNowIncidents: {
-          title: "ServiceNow Incidents Analysis",
-          summary: {
-            trend: "Needs Attention",
-            percentageChange: "+15%",
-            impactLevel: "Medium"
-          },
-          distribution: {
-            categories: ["Access Management", "Network", "Hardware", "Software", "Security"],
-            values: [30, 25, 20, 15, 10]
-          },
-          rootCauses: [
-            { cause: "Access Control Issues", percentage: 30, impact: "Medium", trend: "increasing" },
-            { cause: "Network Latency", percentage: 25, impact: "High", trend: "stable" },
-            { cause: "Hardware Failures", percentage: 20, impact: "Medium", trend: "stable" },
-            { cause: "Software Updates", percentage: 15, impact: "Low", trend: "decreasing" }
-          ],
-          forecast: {
-            nextMonth: 165,
-            confidence: 88,
-            trend: "stabilizing",
-            factors: [
-              "New access management system rollout",
-              "Network infrastructure upgrades",
-              "Preventive maintenance schedule"
-            ]
-          },
-          recommendations: [
-            {
-              title: "Access Management Automation",
-              description: "Implement automated access provisioning system",
-              impact: "High",
-              effort: "Medium",
-              timeframe: "3 weeks"
-            },
-            {
-              title: "Network Monitoring",
-              description: "Deploy advanced network monitoring tools",
-              impact: "Medium",
-              effort: "Low",
-              timeframe: "2 weeks"
-            },
-            {
-              title: "Hardware Refresh",
-              description: "Accelerate hardware replacement program",
-              impact: "Medium",
-              effort: "High",
-              timeframe: "6 weeks"
-            }
-          ],
-          timeline: {
-            past: [
-              { month: "Jan", value: 142 },
-              { month: "Feb", value: 156 },
-              { month: "Mar", value: 160 }
-            ],
-            forecast: [
-              { month: "Apr", value: 165 },
-              { month: "May", value: 168 },
-              { month: "Jun", value: 170 }
-            ]
-          },
-          riskAssessment: {
-            overall: "Medium",
-            factors: [
-              { name: "Service Availability", level: "Medium" },
-              { name: "User Productivity", level: "Medium" },
-              { name: "Resource Utilization", level: "High" }
-            ]
-          }
-        },
-        criticalBugs: {
-          title: "Critical Bugs Analysis",
-          summary: {
-            trend: "Severe Alert",
-            percentageChange: "+45%",
-            impactLevel: "Critical"
-          },
-          distribution: {
-            categories: ["Data Corruption", "Security Breach", "Payment Processing", "User Authentication", "Core Services"],
-            values: [35, 30, 20, 10, 5]
-          },
-          rootCauses: [
-            { cause: "Data Integrity Violations", percentage: 35, impact: "Critical", trend: "increasing" },
-            { cause: "Security Vulnerabilities", percentage: 30, impact: "Critical", trend: "increasing" },
-            { cause: "Payment Gateway Failures", percentage: 20, impact: "Critical", trend: "stable" },
-            { cause: "Authentication Bypass", percentage: 15, impact: "Critical", trend: "increasing" }
-          ],
-          forecast: {
-            nextMonth: 52,
-            confidence: 95,
-            trend: "severe escalation",
-            factors: [
-              "Recent security breaches",
-              "Legacy system vulnerabilities",
-              "Third-party integration issues"
-            ]
-          },
-          recommendations: [
-            {
-              title: "Emergency Security Audit",
-              description: "Conduct immediate security vulnerability assessment",
-              impact: "Critical",
-              effort: "High",
-              timeframe: "48 hours"
-            },
-            {
-              title: "Data Integrity Checks",
-              description: "Implement real-time data validation and monitoring",
-              impact: "Critical",
-              effort: "High",
-              timeframe: "72 hours"
-            },
-            {
-              title: "Payment System Upgrade",
-              description: "Upgrade payment processing infrastructure",
-              impact: "Critical",
-              effort: "Critical",
-              timeframe: "1 week"
-            }
-          ],
-          timeline: {
-            past: [
-              { month: "Jan", value: 28 },
-              { month: "Feb", value: 35 },
-              { month: "Mar", value: 45 }
-            ],
-            forecast: [
-              { month: "Apr", value: 52 },
-              { month: "May", value: 58 },
-              { month: "Jun", value: 63 }
-            ]
-          },
-          riskAssessment: {
-            overall: "Severe",
-            factors: [
-              { name: "Data Security", level: "Critical" },
-              { name: "Financial Impact", level: "Severe" },
-              { name: "Reputation Risk", level: "Critical" }
-            ]
-          }
-        }
-      };
+  const generateDetailedAnalysis = (metric) => {
+    // Base structure for analysis
+    const analysis = {
+      summary: {
+        trend: 'Increasing',
+        change: '+15%',
+        impactLevel: 'High'
+      },
+      distribution: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: []
+        }]
+      },
+      timeline: {
+        labels: generateTimelineLabels(),
+        datasets: [{
+          label: metric,
+          data: generateTimelineData(),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4
+        }]
+      },
+      rootCauses: [],
+      recommendations: [],
+      riskAssessment: {
+        level: 'High',
+        factors: []
+      }
+    };
 
-      setAnalysis(analyses[type]);
-      setIsLoading(false);
-    }, 1500);
+    // Customize analysis based on metric
+    switch (metric.toLowerCase()) {
+      case 'major issues':
+        analysis.summary = {
+          trend: 'Increasing',
+          change: '+8%',
+          impactLevel: 'High'
+        };
+        analysis.distribution = {
+          labels: ['Performance', 'Security', 'Functionality', 'Data Integrity', 'Compliance'],
+          datasets: [{
+            data: [35, 25, 20, 12, 8],
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(59, 130, 246, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(139, 92, 246, 0.7)'
+            ]
+          }]
+        };
+        analysis.rootCauses = [
+          'Performance bottlenecks in critical workflows',
+          'Security vulnerabilities in authentication',
+          'Data processing inefficiencies'
+        ];
+        analysis.recommendations = [
+          'Implement performance optimization plan',
+          'Conduct security audit and penetration testing',
+          'Optimize database queries and caching'
+        ];
+        analysis.riskAssessment.factors = [
+          'Customer satisfaction impact',
+          'Revenue loss potential',
+          'Compliance risks'
+        ];
+        break;
+
+      case 'servicenow incidents':
+        analysis.summary = {
+          trend: 'Decreasing',
+          change: '-12%',
+          impactLevel: 'Medium'
+        };
+        analysis.distribution = {
+          labels: ['System Outages', 'Access Issues', 'Network', 'Application', 'Infrastructure'],
+          datasets: [{
+            data: [30, 25, 20, 15, 10],
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(59, 130, 246, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(139, 92, 246, 0.7)'
+            ]
+          }]
+        };
+        analysis.rootCauses = [
+          'Infrastructure capacity limitations',
+          'Authentication service disruptions',
+          'Network connectivity issues'
+        ];
+        analysis.recommendations = [
+          'Implement automated monitoring and alerts',
+          'Enhance network resilience and redundancy',
+          'Upgrade infrastructure capacity'
+        ];
+        analysis.riskAssessment.factors = [
+          'System availability',
+          'Business continuity',
+          'Service level agreements'
+        ];
+        break;
+
+      case 'critical bugs':
+        analysis.summary = {
+          trend: 'Increasing',
+          change: '+25%',
+          impactLevel: 'Critical'
+        };
+        analysis.distribution = {
+          labels: ['Security', 'Data Loss', 'System Crash', 'Performance', 'Authentication'],
+          datasets: [{
+            data: [40, 25, 15, 12, 8],
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(59, 130, 246, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(139, 92, 246, 0.7)'
+            ]
+          }]
+        };
+        analysis.rootCauses = [
+          'Security vulnerabilities in core modules',
+          'Data corruption during processing',
+          'Memory leaks in critical components'
+        ];
+        analysis.recommendations = [
+          'Immediate security patches deployment',
+          'Implement data integrity checks',
+          'Memory management optimization'
+        ];
+        analysis.riskAssessment.factors = [
+          'Data security',
+          'Customer trust',
+          'Regulatory compliance'
+        ];
+        break;
+
+      default:
+        analysis.distribution = {
+          labels: ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'],
+          datasets: [{
+            data: [30, 25, 20, 15, 10],
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(59, 130, 246, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(139, 92, 246, 0.7)'
+            ]
+          }]
+        };
+    }
+
+    return analysis;
+  };
+
+  // Helper function to generate timeline labels
+  const generateTimelineLabels = () => {
+    const labels = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+    return labels;
+  };
+
+  // Helper function to generate timeline data
+  const generateTimelineData = () => {
+    return Array.from({ length: 7 }, () => Math.floor(Math.random() * 50) + 10);
   };
 
   const handleMetricSelect = (type) => {
     setSelectedMetric(type);
-    generateDetailedAnalysis(type);
+    setAnalysis(generateDetailedAnalysis(type));
   };
 
   const MetricCard = ({ id, title, value, type, icon: Icon, trend, color, isSelected }) => (
@@ -591,7 +473,7 @@ const RootCauseAnalysis = () => {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Change</span>
-                    {analysis.summary.percentageChange}
+                    {analysis.summary.change}
                   </div>
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">
                     {analysis.summary.impactLevel}
@@ -614,39 +496,20 @@ const RootCauseAnalysis = () => {
               <div className="h-64 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <Pie
                   data={{
-                    labels: analysis.distribution.categories,
-                    datasets: [
-                      {
-                        data: analysis.distribution.values,
-                        backgroundColor: [
-                          'rgba(59, 130, 246, 0.8)', // Blue
-                          'rgba(16, 185, 129, 0.8)', // Green
-                          'rgba(245, 158, 11, 0.8)', // Yellow
-                          'rgba(239, 68, 68, 0.8)',  // Red
-                          'rgba(139, 92, 246, 0.8)', // Purple
-                        ],
-                        borderColor: [
-                          'rgba(59, 130, 246, 1)',
-                          'rgba(16, 185, 129, 1)',
-                          'rgba(245, 158, 11, 1)',
-                          'rgba(239, 68, 68, 1)',
-                          'rgba(139, 92, 246, 1)',
-                        ],
-                        borderWidth: 1,
-                      },
-                    ],
+                    labels: analysis.distribution.labels,
+                    datasets: analysis.distribution.datasets,
                   }}
                   options={distributionChartOptions}
                 />
               </div>
               <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-                {analysis.distribution.categories.map((category, index) => (
+                {analysis.distribution.labels.map((category, index) => (
                   <div key={category} className="text-center">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {category}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {analysis.distribution.values[index]}%
+                      {analysis.distribution.datasets[0].data[index]}%
                     </div>
                   </div>
                 ))}
@@ -660,36 +523,8 @@ const RootCauseAnalysis = () => {
                   <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center">
-                        <span className="font-medium text-gray-900 dark:text-white">{cause.cause}</span>
-                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                          cause.impact === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}>
-                          {cause.impact}
-                        </span>
+                        <span className="font-medium text-gray-900 dark:text-white">{cause}</span>
                       </div>
-                      <span className={`text-sm ${
-                        cause.trend === 'increasing' ? 'text-red-500' :
-                        cause.trend === 'decreasing' ? 'text-green-500' :
-                        'text-gray-500'
-                      }`}>
-                        {cause.trend === 'increasing' ? <ArrowUpRight className="h-4 w-4" /> :
-                         cause.trend === 'decreasing' ? <ArrowDownRight className="h-4 w-4" /> :
-                         <Activity className="h-4 w-4" />}
-                      </span>
-                    </div>
-                    <div className="relative pt-1">
-                      <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${cause.percentage}%` }}
-                          transition={{ duration: 0.8, ease: "easeOut" }}
-                          className="bg-yellow-500 rounded"
-                        />
-                      </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        {cause.percentage}% of cases
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -703,32 +538,8 @@ const RootCauseAnalysis = () => {
                   <div className="h-64 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <Line
                       data={{
-                        labels: [
-                          ...analysis.timeline.past.map(item => item.month),
-                          ...analysis.timeline.forecast.map(item => item.month)
-                        ],
-                        datasets: [
-                          {
-                            label: 'Historical Data',
-                            data: analysis.timeline.past.map(item => item.value),
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                          },
-                          {
-                            label: 'Forecast',
-                            data: [
-                              ...Array(analysis.timeline.past.length).fill(null),
-                              ...analysis.timeline.forecast.map(item => item.value)
-                            ],
-                            borderColor: 'rgba(245, 158, 11, 1)',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderDash: [5, 5],
-                            fill: true,
-                            tension: 0.4,
-                          }
-                        ],
+                        labels: analysis.timeline.labels,
+                        datasets: analysis.timeline.datasets,
                       }}
                       options={timelineChartOptions}
                     />
@@ -777,17 +588,7 @@ const RootCauseAnalysis = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {analysis.recommendations.map((rec, index) => (
                   <div key={index} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-100 dark:border-yellow-900/30">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">{rec.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{rec.description}</p>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        rec.impact === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}>
-                        Impact: {rec.impact}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">{rec.timeframe}</span>
-                    </div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">{rec}</h4>
                   </div>
                 ))}
               </div>
@@ -797,18 +598,18 @@ const RootCauseAnalysis = () => {
             <AnalysisSection title="Risk Assessment" icon={AlertCircle}>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`md:col-span-1 rounded-lg p-4 ${
-                  analysis.riskAssessment.overall === 'High' ? 'bg-red-50 dark:bg-red-900/20' :
-                  analysis.riskAssessment.overall === 'Medium' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+                  analysis.riskAssessment.level === 'High' ? 'bg-red-50 dark:bg-red-900/20' :
+                  analysis.riskAssessment.level === 'Medium' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
                   'bg-green-50 dark:bg-green-900/20'
                 }`}>
                   <div className="text-center">
                     <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Overall Risk</div>
                     <div className={`text-2xl font-bold ${
-                      analysis.riskAssessment.overall === 'High' ? 'text-red-600 dark:text-red-400' :
-                      analysis.riskAssessment.overall === 'Medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                      analysis.riskAssessment.level === 'High' ? 'text-red-600 dark:text-red-400' :
+                      analysis.riskAssessment.level === 'Medium' ? 'text-yellow-600 dark:text-yellow-400' :
                       'text-green-600 dark:text-green-400'
                     }`}>
-                      {analysis.riskAssessment.overall}
+                      {analysis.riskAssessment.level}
                     </div>
                   </div>
                 </div>
@@ -816,14 +617,7 @@ const RootCauseAnalysis = () => {
                   {analysis.riskAssessment.factors.map((factor, index) => (
                     <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{factor.name}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          factor.level === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                          factor.level === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        }`}>
-                          {factor.level}
-                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{factor}</span>
                       </div>
                     </div>
                   ))}

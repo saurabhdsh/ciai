@@ -32,27 +32,46 @@ const parseCSVData = (csvText) => {
 
 // Function to get recent failures
 // Can filter by days and/or limit the number of results
-export const getRecentFailures = (data, options = { days: 30, limit: 10 }) => {
-  if (!Array.isArray(data) || data.length === 0) {
+export const getRecentFailures = (data, options = { days: 30, limit: 5 }) => {
+  if (!data || !Array.isArray(data)) {
     return [];
   }
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - options.days);
+  const now = new Date();
+  const startDate = new Date();
+  startDate.setDate(now.getDate() - options.days);
 
-  return data
-    .filter(failure => new Date(failure.date) >= cutoffDate)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+  // Sort failures by date in descending order
+  const sortedFailures = data
+    .filter(failure => {
+      const failureDate = new Date(failure.Date || failure.date);
+      return failureDate >= startDate;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.Date || a.date);
+      const dateB = new Date(b.Date || b.date);
+      return dateB - dateA;
+    })
     .slice(0, options.limit)
     .map(failure => ({
-      ...failure,
-      date: new Date(failure.date)
+      id: failure.ID || failure.id,
+      title: failure.Title || failure.title,
+      description: failure.Description || failure.description,
+      date: failure.Date || failure.date,
+      severity: failure.Severity || failure.severity,
+      status: failure.Status || failure.status,
+      source: failure.Source || failure.source,
+      priority: failure.Priority || failure.priority,
+      defectType: failure["Defect Type"] || failure.defectType,
+      lob: failure.LOB || failure.lob
     }));
+
+  return sortedFailures;
 };
 
 // Function to calculate metrics from failures data
-export const calculateMetrics = (failures) => {
-  if (!Array.isArray(failures)) {
+export const calculateMetrics = (data) => {
+  if (!data || !Array.isArray(data)) {
     return {
       totalDefects: 0,
       majorIssues: 0,
@@ -62,20 +81,17 @@ export const calculateMetrics = (failures) => {
   }
 
   const metrics = {
-    totalDefects: failures.length,
-    majorIssues: failures.filter(f => 
-      f.priority === 'High' || 
-      f.severity === 'High' || 
-      f.severity === 'Major'
+    totalDefects: data.length,
+    majorIssues: data.filter(item => 
+      (item.Severity === 'High' || item.severity === 'High') && 
+      (item.Status !== 'Resolved' && item.status !== 'Resolved')
     ).length,
-    serviceNowIncidents: failures.filter(f => 
-      f.source === 'ServiceNow' || 
-      f.defectType === 'Incident'
+    serviceNowIncidents: data.filter(item => 
+      (item.Source === 'ServiceNow' || item.source === 'ServiceNow')
     ).length,
-    criticalBugs: failures.filter(f => 
-      f.severity === 'Critical' || 
-      f.priority === 'Critical' ||
-      f.defectType === 'Critical Bug'
+    criticalBugs: data.filter(item => 
+      (item.Severity === 'Critical' || item.severity === 'Critical') && 
+      (item["Defect Type"] === 'Security' || item.defectType === 'Security')
     ).length
   };
 

@@ -25,6 +25,10 @@ function App() {
     return savedInfo ? JSON.parse(savedInfo) : null;
   });
 
+  const [hasSelectedSources, setHasSelectedSources] = useState(() => {
+    return localStorage.getItem('hasSelectedSources') === 'true';
+  });
+
   useEffect(() => {
     // Save preference to localStorage
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -51,21 +55,42 @@ function App() {
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
     setIsAuthenticated(true);
     localStorage.setItem('isAuthenticated', 'true');
+    // Reset source selection on login
+    setHasSelectedSources(false);
+    localStorage.removeItem('hasSelectedSources');
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUserInfo(null);
+    setHasSelectedSources(false);
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('hasSelectedSources');
+    localStorage.removeItem('selectedSources');
+  };
+
+  const handleSourceSelection = () => {
+    setHasSelectedSources(true);
+    localStorage.setItem('hasSelectedSources', 'true');
   };
 
   const ProtectedRoute = ({ children }) => {
     if (!isAuthenticated) {
       return <Navigate to="/login" replace />;
     }
+    
+    if (!hasSelectedSources) {
+      return <Navigate to="/ai-landing" replace />;
+    }
+
     return (
-      <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={handleLogout} userInfo={userInfo}>
+      <Layout 
+        darkMode={darkMode} 
+        toggleDarkMode={toggleDarkMode} 
+        onLogout={handleLogout} 
+        userInfo={userInfo}
+      >
         {children}
       </Layout>
     );
@@ -89,7 +114,11 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                <Navigate to="/ai-landing" replace />
+                hasSelectedSources ? (
+                  <Navigate to="/failure-trends" replace />
+                ) : (
+                  <Navigate to="/ai-landing" replace />
+                )
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -99,7 +128,7 @@ function App() {
             path="/ai-landing"
             element={
               <ProtectedRoute>
-                <AILanding />
+                <AILanding onSourceSelection={handleSourceSelection} />
               </ProtectedRoute>
             }
           />

@@ -23,7 +23,7 @@ import {
   Zap
 } from 'lucide-react';
 
-const AILanding = () => {
+const AILanding = ({ onSourceSelection }) => {
   const [selectedSources, setSelectedSources] = useState([]);
   const [projectKey, setProjectKey] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
@@ -200,8 +200,14 @@ const AILanding = () => {
           proj => proj.id === projectSelections[source]
         )?.name
       }));
+
+      // Store selected sources in localStorage
+      localStorage.setItem('selectedSources', JSON.stringify(sourceConfigurations));
       
-      // In a real app, this would connect to the selected data sources
+      // Call the callback to update parent state
+      onSourceSelection();
+      
+      // Navigate to failure trends
       setTimeout(() => {
         navigate('/failure-trends', { 
           state: { 
