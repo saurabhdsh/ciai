@@ -1,0 +1,11 @@
+{
+  "files": {
+    "main.css": "/ciai/static/css/main.51953d17.css",
+    "main.js": "/ciai/static/js/main.4a26ae03.js",
+    "index.html": "/ciai/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.51953d17.css",
+    "static/js/main.4a26ae03.js"
+  ]
+}
