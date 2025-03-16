@@ -1,0 +1,151 @@
+ID,Title,Description,Date,Status,Severity,Priority,Defect Type,LOB,Source,Resolved Date
+F001,Login failure,Users unable to login with correct credentials,2023-05-01,Open,Critical,P1,Authentication,Banking,Rally,
+F002,Data not loading,Dashboard data not loading for some users,2023-05-02,In Progress,High,P1,Data,Banking,Rally,
+F003,UI alignment issue,Button misaligned on mobile view,2023-05-03,Resolved,Low,P3,UI,Banking,Rally,2023-05-10
+F004,Incorrect calculation,Tax calculation showing wrong values,2023-05-04,Open,High,P1,Calculation,Finance,Jira,
+F005,Session timeout,Users getting logged out too quickly,2023-05-05,In Progress,Medium,P2,Session,Banking,Jira,
+F006,Missing validation,Form submitting without required fields,2023-05-06,Resolved,Medium,P2,Validation,Insurance,Jira,2023-05-15
+F007,Slow performance,Report generation taking too long,2023-05-07,Open,High,P2,Performance,Finance,ServiceNow,
+F008,Error message unclear,Generic error shown to users,2023-05-08,Resolved,Low,P3,UI,Insurance,ServiceNow,2023-05-12
+F009,Data inconsistency,Different values shown in different screens,2023-05-09,Open,Critical,P1,Data,Banking,Rally,
+F010,Button not working,Submit button not responding on click,2023-05-10,In Progress,Medium,P2,UI,Finance,Rally,
+F011,API timeout,External API call timing out,2023-05-11,Resolved,High,P1,Integration,Banking,Jira,2023-05-20
+F012,Incorrect sorting,Table sorting not working correctly,2023-05-12,Open,Low,P3,UI,Insurance,ServiceNow,
+F013,Security vulnerability,Password stored in plain text,2023-05-13,In Progress,Critical,P1,Security,Banking,Rally,
+F014,Broken link,Help link redirecting to 404 page,2023-05-14,Resolved,Low,P3,UI,Finance,Jira,2023-05-18
+F015,Data duplication,Records being duplicated on save,2023-05-15,Open,High,P1,Data,Insurance,ServiceNow,
+F016,Incorrect currency,Wrong currency symbol shown,2023-05-16,In Progress,Medium,P2,UI,Banking,Rally,
+F017,Memory leak,Application consuming increasing memory,2023-05-17,Resolved,Critical,P1,Performance,Finance,Jira,2023-05-25
+F018,Accessibility issue,Screen reader compatibility problem,2023-05-18,Open,Medium,P2,Accessibility,Insurance,ServiceNow,
+F019,Incorrect date format,Dates displayed in wrong format,2023-05-19,In Progress,Low,P3,UI,Banking,Rally,
+F020,Search not working,Search functionality returning no results,2023-05-20,Resolved,High,P1,Search,Finance,Jira,2023-05-28
+F021,Permission issue,Users seeing unauthorized data,2023-05-21,Open,Critical,P1,Security,Insurance,ServiceNow,
+F022,Spelling errors,Multiple typos in user interface,2023-05-22,Resolved,Low,P4,UI,Banking,Rally,2023-05-25
+F023,Data import failure,CSV import not working,2023-05-23,In Progress,High,P2,Data,Finance,Jira,
+F024,Browser compatibility,Issues with Safari browser,2023-05-24,Open,Medium,P2,Compatibility,Insurance,ServiceNow,
+F025,Notification not sent,Email notifications not being delivered,2023-05-25,Resolved,Medium,P2,Notification,Banking,Rally,2023-06-01
+F026,Incorrect totals,Summary totals not matching detail values,2023-05-26,Open,High,P1,Calculation,Finance,Jira,
+F027,Session conflict,Multiple sessions causing data loss,2023-05-27,In Progress,Critical,P1,Session,Insurance,ServiceNow,
+F028,Print formatting,Reports not printing correctly,2023-05-28,Resolved,Low,P3,UI,Banking,Rally,2023-06-05
+F029,Timeout on large data,Process timing out with large datasets,2023-05-29,Open,High,P2,Performance,Finance,Jira,
+F030,Mobile responsiveness,Layout breaks on small screens,2023-05-30,In Progress,Medium,P2,UI,Insurance,ServiceNow,
+F031,Data export issue,Excel export missing columns,2023-05-31,Resolved,Medium,P2,Export,Banking,Rally,2023-06-07
+F032,Incorrect filtering,Filter not applying correctly,2023-06-01,Open,Low,P3,UI,Finance,Jira,
+F033,API rate limiting,Too many API calls causing throttling,2023-06-02,In Progress,High,P1,Integration,Insurance,ServiceNow,
+F034,Caching issue,Stale data shown after updates,2023-06-03,Resolved,Medium,P2,Cache,Banking,Rally,2023-06-10
+F035,Form reset issue,Form not clearing after submission,2023-06-04,Open,Low,P3,UI,Finance,Jira,
+F036,Database deadlock,Concurrent operations causing deadlock,2023-06-05,In Progress,Critical,P1,Database,Insurance,ServiceNow,
+F037,Incorrect rounding,Financial calculations rounding incorrectly,2023-06-06,Resolved,High,P1,Calculation,Banking,Rally,2023-06-15
+F038,Menu navigation issue,Dropdown menu disappearing too quickly,2023-06-07,Open,Low,P3,UI,Finance,Jira,
+F039,File upload limit,File size restriction too small,2023-06-08,In Progress,Medium,P2,Upload,Insurance,ServiceNow,
+F040,Audit log incomplete,Some user actions not being logged,2023-06-09,Resolved,High,P1,Audit,Banking,Rally,2023-06-18
+F041,Incorrect status update,Status not changing after action,2023-06-10,Open,Medium,P2,Status,Finance,Jira,
+F042,Timeout during backup,System backup process timing out,2023-06-11,In Progress,Critical,P1,Backup,Insurance,ServiceNow,
+F043,Pagination issue,Next page button not working,2023-06-12,Resolved,Low,P3,UI,Banking,Rally,2023-06-19
+F044,Incorrect tax rate,Wrong tax rate applied to transactions,2023-06-13,Open,High,P1,Calculation,Finance,Jira,
+F045,SSL certificate error,Certificate validation failing,2023-06-14,In Progress,Critical,P1,Security,Insurance,ServiceNow,
+F046,Report formatting,PDF report layout broken,2023-06-15,Resolved,Medium,P2,Reporting,Banking,Rally,2023-06-22
+F047,Duplicate user accounts,System creating duplicate user records,2023-06-16,Open,High,P1,User Management,Finance,Jira,
+F048,Slow database query,Specific query taking too long,2023-06-17,In Progress,High,P2,Performance,Insurance,ServiceNow,
+F049,Incorrect sorting order,Default sort order incorrect,2023-06-18,Resolved,Low,P3,UI,Banking,Rally,2023-06-25
+F050,API response format,API returning incorrect JSON format,2023-06-19,Open,Medium,P2,Integration,Finance,Jira,
+F051,Authentication bypass,Security vulnerability in login flow,2023-06-20,In Progress,Critical,P1,Security,Banking,Rally,
+F052,Data corruption,Database records corrupted after update,2023-06-21,Open,Critical,P1,Data,Insurance,ServiceNow,
+F053,Memory overflow,Application crashing with large datasets,2023-06-22,Resolved,High,P1,Performance,Finance,Jira,2023-06-30
+F054,Incorrect permissions,Users granted excessive access rights,2023-06-23,In Progress,Critical,P1,Security,Banking,Rally,
+F055,API versioning issue,Incompatible API versions causing errors,2023-06-24,Open,High,P1,Integration,Finance,ServiceNow,
+F056,Broken image links,Product images not displaying,2023-06-25,Resolved,Medium,P2,UI,Insurance,Jira,2023-07-02
+F057,Session hijacking vulnerability,Security issue with session management,2023-06-26,In Progress,Critical,P1,Security,Banking,Rally,
+F058,Incorrect tax calculation,Tax rates applied incorrectly,2023-06-27,Open,High,P1,Calculation,Finance,ServiceNow,
+F059,Cross-site scripting,XSS vulnerability in search function,2023-06-28,Resolved,Critical,P1,Security,Insurance,Jira,2023-07-05
+F060,Data synchronization failure,Backend and frontend data out of sync,2023-06-29,In Progress,High,P1,Data,Banking,Rally,
+F061,Payment processing error,Transactions failing intermittently,2023-06-30,Open,Critical,P1,Payment,Finance,ServiceNow,
+F062,Slow API response,API endpoints taking too long to respond,2023-07-01,Resolved,High,P1,Performance,Insurance,Jira,2023-07-08
+F063,Incorrect currency conversion,Exchange rates applied incorrectly,2023-07-02,In Progress,High,P1,Calculation,Banking,Rally,
+F064,Data leakage,Sensitive data visible in logs,2023-07-03,Open,Critical,P1,Security,Finance,ServiceNow,
+F065,UI rendering issue,Components not rendering correctly,2023-07-04,Resolved,Medium,P2,UI,Insurance,Jira,2023-07-10
+F066,Database connection timeout,Intermittent database connectivity issues,2023-07-05,In Progress,High,P1,Database,Banking,Rally,
+F067,Incorrect date calculations,Date arithmetic producing wrong results,2023-07-06,Open,Medium,P2,Calculation,Finance,ServiceNow,
+F068,CSRF vulnerability,Cross-site request forgery issue,2023-07-07,Resolved,Critical,P1,Security,Insurance,Jira,2023-07-15
+F069,Cache invalidation issue,Cached data not refreshing properly,2023-07-08,In Progress,Medium,P2,Cache,Banking,Rally,
+F070,Incorrect sorting algorithm,Data sorted in wrong order,2023-07-09,Open,Low,P3,Algorithm,Finance,ServiceNow,
+F071,Memory leak in background process,Server memory increasing over time,2023-07-10,Resolved,High,P1,Performance,Insurance,Jira,2023-07-18
+F072,Incorrect decimal precision,Financial calculations losing precision,2023-07-11,In Progress,High,P1,Calculation,Banking,Rally,
+F073,API rate limit too low,Legitimate requests being throttled,2023-07-12,Open,Medium,P2,API,Finance,ServiceNow,
+F074,SQL injection vulnerability,Unsanitized input in database queries,2023-07-13,Resolved,Critical,P1,Security,Insurance,Jira,2023-07-20
+F075,Broken authentication flow,Password reset functionality not working,2023-07-14,In Progress,Critical,P1,Authentication,Banking,Rally,
+F076,Data import validation failure,Invalid data accepted during import,2023-07-15,Open,High,P1,Validation,Finance,ServiceNow,
+F077,Incorrect error handling,Exceptions not properly caught,2023-07-16,Resolved,Medium,P2,Error Handling,Insurance,Jira,2023-07-23
+F078,Session timeout too short,Users logged out during active use,2023-07-17,In Progress,Medium,P2,Session,Banking,Rally,
+F079,Incorrect data aggregation,Summary statistics calculated incorrectly,2023-07-18,Open,High,P1,Calculation,Finance,ServiceNow,
+F080,Cross-browser compatibility,Application not working in Firefox,2023-07-19,Resolved,Medium,P2,Compatibility,Insurance,Jira,2023-07-25
+F081,Insecure direct object reference,Unauthorized access to resources,2023-07-20,In Progress,Critical,P1,Security,Banking,Rally,
+F082,Incorrect timezone handling,Dates incorrect across timezones,2023-07-21,Open,Medium,P2,Date,Finance,ServiceNow,
+F083,Broken access control,Users can access unauthorized functions,2023-07-22,Resolved,Critical,P1,Security,Insurance,Jira,2023-07-30
+F084,Performance degradation,System slowing down over time,2023-07-23,In Progress,High,P1,Performance,Banking,Rally,
+F085,Incorrect number formatting,Numbers displayed without proper formatting,2023-07-24,Open,Low,P3,UI,Finance,ServiceNow,
+F086,Security misconfiguration,Server exposing sensitive information,2023-07-25,Resolved,Critical,P1,Security,Insurance,Jira,2023-08-01
+F087,Data truncation,Long text fields being cut off,2023-07-26,In Progress,Medium,P2,Data,Banking,Rally,
+F088,Incorrect search results,Search returning irrelevant results,2023-07-27,Open,Medium,P2,Search,Finance,ServiceNow,
+F089,XML external entity attack,XXE vulnerability in XML parser,2023-07-28,Resolved,Critical,P1,Security,Insurance,Jira,2023-08-05
+F090,Incorrect pagination,Page counts incorrect in results,2023-07-29,In Progress,Low,P3,UI,Banking,Rally,
+F091,API documentation mismatch,API behavior doesn't match documentation,2023-07-30,Open,Medium,P2,Documentation,Finance,ServiceNow,
+F092,Insecure deserialization,Vulnerability in object deserialization,2023-07-31,Resolved,Critical,P1,Security,Insurance,Jira,2023-08-07
+F093,Incorrect file encoding,Special characters corrupted in files,2023-08-01,In Progress,Medium,P2,Encoding,Banking,Rally,
+F094,Insufficient logging,Security events not properly logged,2023-08-02,Open,High,P1,Logging,Finance,ServiceNow,
+F095,Component failure under load,System component failing at high volume,2023-08-03,Resolved,High,P1,Performance,Insurance,Jira,2023-08-10
+F096,Incorrect input validation,Invalid data accepted by forms,2023-08-04,In Progress,Medium,P2,Validation,Banking,Rally,
+F097,Broken dependency,Third-party library causing errors,2023-08-05,Open,High,P1,Dependency,Finance,ServiceNow,
+F098,Using components with known vulnerabilities,Outdated library with security issues,2023-08-06,Resolved,Critical,P1,Security,Insurance,Jira,2023-08-15
+F099,Incorrect state management,Application state becoming corrupted,2023-08-07,In Progress,High,P1,State Management,Banking,Rally,
+F100,Insufficient monitoring,System issues not detected promptly,2023-08-08,Open,Medium,P2,Monitoring,Finance,ServiceNow,
+F101,Authentication service failure,Users unable to authenticate with SSO,2024-05-01,Open,Critical,P1,Authentication,Banking,Rally,
+F102,Dashboard data inconsistency,Metrics showing different values across views,2024-05-02,In Progress,High,P1,Data,Finance,Rally,
+F103,Mobile UI rendering issue,Elements overlapping on mobile devices,2024-05-03,Resolved,Medium,P2,UI,Insurance,Rally,2024-05-10
+F104,Tax calculation error,International tax rates applied incorrectly,2024-05-04,Open,High,P1,Calculation,Banking,Jira,
+F105,Premature session expiration,Sessions timing out too quickly,2024-05-05,In Progress,Medium,P2,Session,Finance,Jira,
+F106,Form validation bypass,Required fields can be submitted empty,2024-05-06,Resolved,High,P1,Validation,Insurance,Jira,2024-05-15
+F107,Report generation timeout,Large reports failing to generate,2024-05-07,Open,Critical,P1,Performance,Banking,ServiceNow,
+F108,Misleading error messages,Error messages not describing actual issues,2024-05-08,Resolved,Low,P3,UI,Finance,ServiceNow,2024-05-12
+F109,Data synchronization issue,Backend and frontend data out of sync,2024-05-09,Open,Critical,P1,Data,Insurance,Rally,
+F110,Unresponsive UI elements,Interactive elements not responding to clicks,2024-05-10,In Progress,High,P1,UI,Banking,Rally,
+F111,Third-party API failure,External payment gateway integration failing,2024-05-11,Resolved,Critical,P1,Integration,Finance,Jira,2024-05-20
+F112,Data filtering malfunction,Filters not applying correctly to datasets,2024-05-12,Open,Medium,P2,UI,Insurance,ServiceNow,
+F113,Password policy bypass,Weak passwords being accepted,2024-05-13,In Progress,Critical,P1,Security,Banking,Rally,
+F114,Broken navigation links,Internal links leading to 404 errors,2024-05-14,Resolved,Medium,P2,UI,Finance,Jira,2024-05-18
+F115,Database record duplication,Transactions being recorded multiple times,2024-05-15,Open,Critical,P1,Data,Insurance,ServiceNow,
+F116,Internationalization issue,Currency symbols incorrect for locale,2024-05-16,In Progress,Medium,P2,UI,Banking,Rally,
+F117,Memory consumption spike,Application using excessive memory,2024-05-17,Resolved,High,P1,Performance,Finance,Jira,2024-05-25
+F118,Screen reader compatibility,Application not accessible to screen readers,2024-05-18,Open,High,P1,Accessibility,Insurance,ServiceNow,
+F119,Date format inconsistency,Different date formats used across application,2024-05-19,In Progress,Medium,P2,UI,Banking,Rally,
+F120,Search functionality broken,Search returning no results for valid queries,2024-05-20,Resolved,High,P1,Search,Finance,Jira,2024-05-28
+F121,Unauthorized data access,Users can view data from other accounts,2024-05-21,Open,Critical,P1,Security,Insurance,ServiceNow,
+F122,Content localization errors,Translation errors in multiple languages,2024-05-22,Resolved,Low,P3,UI,Banking,Rally,2024-05-25
+F123,Batch import failure,Mass data import process failing,2024-05-23,In Progress,High,P1,Data,Finance,Jira,
+F124,Browser compatibility issue,Application crashes in Edge browser,2024-05-24,Open,High,P1,Compatibility,Insurance,ServiceNow,
+F125,Email notification failure,System alerts not being delivered,2024-05-25,Resolved,High,P1,Notification,Banking,Rally,2024-06-01
+F126,Financial calculation error,Interest calculations producing incorrect results,2024-05-26,Open,Critical,P1,Calculation,Finance,Jira,
+F127,Concurrent session handling,Data corruption during simultaneous edits,2024-05-27,In Progress,Critical,P1,Session,Insurance,ServiceNow,
+F128,PDF generation error,Reports generating with missing data,2024-05-28,Resolved,Medium,P2,UI,Banking,Rally,2024-06-05
+F129,Performance bottleneck,Database queries timing out with large datasets,2024-05-29,Open,High,P1,Performance,Finance,Jira,
+F130,Responsive design failure,Layout broken on tablet devices,2024-05-30,In Progress,Medium,P2,UI,Insurance,ServiceNow,
+F131,Data export corruption,CSV exports containing corrupted characters,2024-05-31,Resolved,High,P1,Export,Banking,Rally,2024-06-07
+F132,Advanced filter malfunction,Complex filters not working as expected,2024-06-01,Open,Medium,P2,UI,Finance,Jira,
+F133,API throttling issue,Legitimate API requests being blocked,2024-06-02,In Progress,High,P1,Integration,Insurance,ServiceNow,
+F134,Stale data presentation,Cache not invalidating after updates,2024-06-03,Resolved,Medium,P2,Cache,Banking,Rally,2024-06-10
+F135,Form state persistence,Form data lost when navigating between pages,2024-06-04,Open,Medium,P2,UI,Finance,Jira,
+F136,Database deadlock condition,Concurrent transactions causing system hang,2024-06-05,In Progress,Critical,P1,Database,Insurance,ServiceNow,
+F137,Financial rounding error,Monetary values rounding incorrectly,2024-06-06,Resolved,High,P1,Calculation,Banking,Rally,2024-06-15
+F138,Navigation menu glitch,Dropdown menus closing prematurely,2024-06-07,Open,Low,P3,UI,Finance,Jira,
+F139,File upload restriction,Valid files being rejected during upload,2024-06-08,In Progress,Medium,P2,Upload,Insurance,ServiceNow,
+F140,Audit logging gap,Critical user actions not being recorded,2024-06-09,Resolved,High,P1,Audit,Banking,Rally,2024-06-18
+F141,Status update failure,Transaction status not updating correctly,2024-06-10,Open,High,P1,Status,Finance,Jira,
+F142,System backup failure,Automated backups failing silently,2024-06-11,In Progress,Critical,P1,Backup,Insurance,ServiceNow,
+F143,Pagination malfunction,Results pagination showing incorrect page counts,2024-06-12,Resolved,Low,P3,UI,Banking,Rally,2024-06-19
+F144,Tax jurisdiction error,Wrong tax jurisdiction applied to transactions,2024-06-13,Open,High,P1,Calculation,Finance,Jira,
+F145,TLS certificate validation,Security certificate validation failing,2024-06-14,In Progress,Critical,P1,Security,Insurance,ServiceNow,
+F146,Report template corruption,PDF report templates producing malformed output,2024-06-15,Resolved,Medium,P2,Reporting,Banking,Rally,2024-06-22
+F147,User account duplication,System creating duplicate user profiles,2024-06-16,Open,High,P1,User Management,Finance,Jira,
+F148,Query performance degradation,Database queries becoming progressively slower,2024-06-17,In Progress,High,P1,Performance,Insurance,ServiceNow,
+F149,Default sort order incorrect,Data tables sorting in wrong order by default,2024-06-18,Resolved,Low,P3,UI,Banking,Rally,2024-06-25
+F150,API response structure,API returning malformed JSON responses,2024-06-19,Open,High,P1,Integration,Finance,Jira, 
