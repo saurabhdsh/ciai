@@ -38,6 +38,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { loadFailuresData, getRecentFailures, calculateMetrics } from '../services/failureService';
+import { parseCSVString } from '../utils/csvUtils';
 
 // Register ChartJS components
 ChartJS.register(
@@ -55,10 +56,10 @@ ChartJS.register(
 
 const RootCauseAnalysis = () => {
   const [metrics, setMetrics] = useState({
-    totalDefects: 0,
-    majorIssues: 0,
-    serviceNowIncidents: 0,
-    criticalBugs: 0
+    totalDefects: { value: 0, label: 'Total Defects', description: 'All reported issues across systems' },
+    majorIssues: { value: 0, label: 'Major Issues', description: 'High priority and severity issues' },
+    serviceNowIncidents: { value: 0, label: 'ServiceNow Incidents', description: 'Incidents reported in ServiceNow' },
+    criticalBugs: { value: 0, label: 'Critical Bugs', description: 'Critical severity defects' }
   });
 
   const [selectedMetric, setSelectedMetric] = useState(null);
@@ -67,33 +68,46 @@ const RootCauseAnalysis = () => {
 
   // Load and calculate metrics
   useEffect(() => {
+    const loadMetrics = async () => {
+      try {
+        const response = await fetch('/data/failures.csv');
+        const csvText = await response.text();
+        const failuresData = parseCSVString(csvText);
+        
+        if (failuresData && failuresData.length > 0) {
+          const recentFailures = getRecentFailures(failuresData, { days: 30 });
+          const calculatedMetrics = calculateMetrics(recentFailures);
+          
+          setMetrics({
+            totalDefects: {
+              value: calculatedMetrics.totalDefects || 0,
+              label: 'Total Defects',
+              description: 'All reported issues across systems'
+            },
+            majorIssues: {
+              value: calculatedMetrics.majorIssues || 0,
+              label: 'Major Issues',
+              description: 'High priority and severity issues'
+            },
+            serviceNowIncidents: {
+              value: calculatedMetrics.serviceNowIncidents || 0,
+              label: 'ServiceNow Incidents',
+              description: 'Incidents reported in ServiceNow'
+            },
+            criticalBugs: {
+              value: calculatedMetrics.criticalBugs || 0,
+              label: 'Critical Bugs',
+              description: 'Critical severity defects'
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading metrics:', error);
+      }
+    };
+
     loadMetrics();
   }, []);
-
-  const loadMetrics = async () => {
-    try {
-      const failuresData = await loadFailuresData();
-      if (failuresData) {
-        const recentFailures = getRecentFailures(failuresData, { days: 30 });
-        const calculatedMetrics = calculateMetrics(recentFailures);
-        
-        setMetrics({
-          totalDefects: calculatedMetrics.totalDefects || 245,
-          majorIssues: calculatedMetrics.majorIssues || 78,
-          serviceNowIncidents: calculatedMetrics.serviceNowIncidents || 156,
-          criticalBugs: calculatedMetrics.criticalBugs || 32
-        });
-      }
-    } catch (error) {
-      console.error('Error loading metrics:', error);
-      setMetrics({
-        totalDefects: 245,
-        majorIssues: 78,
-        serviceNowIncidents: 156,
-        criticalBugs: 32
-      });
-    }
-  };
 
   const generateDetailedAnalysis = (type) => {
     setIsLoading(true);
@@ -504,7 +518,7 @@ const RootCauseAnalysis = () => {
         <MetricCard
           id="defects"
           title="Total Defects"
-          value={metrics.totalDefects}
+          value={metrics.totalDefects.value}
           type="totalDefects"
           icon={Bug}
           trend="down"
@@ -514,7 +528,7 @@ const RootCauseAnalysis = () => {
         <MetricCard
           id="major"
           title="Major Issues"
-          value={metrics.majorIssues}
+          value={metrics.majorIssues.value}
           type="majorIssues"
           icon={AlertTriangle}
           trend="up"
@@ -524,7 +538,7 @@ const RootCauseAnalysis = () => {
         <MetricCard
           id="incidents"
           title="ServiceNow Incidents"
-          value={metrics.serviceNowIncidents}
+          value={metrics.serviceNowIncidents.value}
           type="serviceNowIncidents"
           icon={AlertOctagon}
           trend="down"
@@ -534,7 +548,7 @@ const RootCauseAnalysis = () => {
         <MetricCard
           id="critical"
           title="Critical Bugs"
-          value={metrics.criticalBugs}
+          value={metrics.criticalBugs.value}
           type="criticalBugs"
           icon={Zap}
           trend="up"

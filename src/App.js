@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import FailureTrends from './pages/FailureTrends';
 import Login from './pages/Login';
 import RootCauseAnalysis from './pages/RootCauseAnalysis';
+import AILanding from './pages/AILanding';
 import './styles/animations.css';
 
 function App() {
@@ -59,6 +60,17 @@ function App() {
     localStorage.removeItem('userInfo');
   };
 
+  const ProtectedRoute = ({ children }) => {
+    if (!isAuthenticated) {
+      return <Navigate to="/login" replace />;
+    }
+    return (
+      <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={handleLogout} userInfo={userInfo}>
+        {children}
+      </Layout>
+    );
+  };
+
   return (
     <Router>
       <div className={darkMode ? 'dark' : ''}>
@@ -67,7 +79,7 @@ function App() {
             path="/login"
             element={
               isAuthenticated ? (
-                <Navigate to="/failure-trends" replace />
+                <Navigate to="/ai-landing" replace />
               ) : (
                 <Login onLogin={handleLogin} />
               )
@@ -77,36 +89,34 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={handleLogout} userInfo={userInfo}>
-                  <Navigate to="/failure-trends" replace />
-                </Layout>
+                <Navigate to="/ai-landing" replace />
               ) : (
                 <Navigate to="/login" replace />
               )
+            }
+          />
+          <Route
+            path="/ai-landing"
+            element={
+              <ProtectedRoute>
+                <AILanding />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/failure-trends"
             element={
-              isAuthenticated ? (
-                <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={handleLogout} userInfo={userInfo}>
-                  <FailureTrends />
-                </Layout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              <ProtectedRoute>
+                <FailureTrends />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/root-cause"
             element={
-              isAuthenticated ? (
-                <Layout onLogout={handleLogout} userInfo={userInfo}>
-                  <RootCauseAnalysis />
-                </Layout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              <ProtectedRoute>
+                <RootCauseAnalysis />
+              </ProtectedRoute>
             }
           />
         </Routes>

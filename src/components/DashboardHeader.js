@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
   RefreshCw, 
@@ -9,7 +9,8 @@ import {
   Clock,
   Share2,
   Database,
-  Zap
+  Zap,
+  Check
 } from 'lucide-react';
 import DataSourceSelector from './DataSourceSelector';
 
@@ -26,7 +27,7 @@ const DashboardHeader = ({
   isLoading = false,
   children
 }) => {
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showSourceSelector, setShowSourceSelector] = useState(false);
   
   // Predefined date ranges
   const dateRanges = [
@@ -36,23 +37,19 @@ const DashboardHeader = ({
     { id: 'all', label: 'All time' }
   ];
 
-  const handleDateRangeSelect = (e) => {
-    onDateRangeChange(e);
-    setShowDatePicker(false);
+  // Close dropdown when clicking outside
+  const handleClickOutside = (e) => {
+    if (!e.target.closest('.source-selector')) {
+      setShowSourceSelector(false);
+    }
   };
 
-  const availableSources = sources.map(source => {
-    let color = 'gray';
-    if (source.toLowerCase().includes('rally')) color = 'blue';
-    if (source.toLowerCase().includes('jira')) color = 'purple';
-    if (source.toLowerCase().includes('servicenow')) color = 'green';
-    
-    return {
-      id: source,
-      name: source,
-      color
+  React.useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  });
+  }, []);
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg mb-6">
@@ -70,53 +67,62 @@ const DashboardHeader = ({
           
           <div className="flex items-center space-x-2 mt-4 md:mt-0">
             {/* Data Source Selector */}
-            <div className="relative">
+            <div className="relative source-selector">
               <button
                 className="flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                onClick={() => setShowDatePicker(!showDatePicker)}
+                onClick={() => setShowSourceSelector(!showSourceSelector)}
               >
                 <Database className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Data Sources
+                  {selectedSources.length === 0 
+                    ? 'Select Sources' 
+                    : `${selectedSources.length} Source${selectedSources.length !== 1 ? 's' : ''}`}
                 </span>
-                <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400 ml-2" />
+                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 ml-2 transition-transform ${showSourceSelector ? 'transform rotate-180' : ''}`} />
               </button>
               
-              {showDatePicker && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-                >
-                  <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                      <Database className="h-4 w-4 mr-1.5" />
-                      Data Sources
-                    </h3>
-                  </div>
-                  
-                  <div className="p-3">
-                    {sources.map(source => (
-                      <div key={source} className="flex items-center mb-2">
-                        <input
-                          type="checkbox"
-                          id={`source-${source}`}
-                          checked={selectedSources.includes(source)}
-                          onChange={() => onSourceChange(source)}
-                          className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded"
-                        />
-                        <label
-                          htmlFor={`source-${source}`}
-                          className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+              <AnimatePresence>
+                {showSourceSelector && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                  >
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                        <Database className="h-4 w-4 mr-1.5" />
+                        Data Sources
+                      </h3>
+                    </div>
+                    
+                    <div className="p-3 space-y-2">
+                      {sources.map(source => (
+                        <div 
+                          key={source}
+                          onClick={() => onSourceChange(source)}
+                          className={`flex items-center p-2 rounded-md cursor-pointer transition-colors ${
+                            selectedSources.includes(source)
+                              ? 'bg-yellow-50 dark:bg-yellow-900/30'
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          }`}
                         >
-                          {source}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+                          <div className={`w-4 h-4 rounded flex items-center justify-center mr-2 ${
+                            selectedSources.includes(source)
+                              ? 'bg-yellow-500'
+                              : 'border border-gray-300 dark:border-gray-600'
+                          }`}>
+                            {selectedSources.includes(source) && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{source}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
             {/* Date Range Selector */}
@@ -159,7 +165,7 @@ const DashboardHeader = ({
       </div>
       
       {/* Active filters display */}
-      {(selectedSources.length > 0) && (
+      {(selectedSources.length > 0 || dateRange) && (
         <div className="flex flex-wrap items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center text-gray-500 dark:text-gray-400">
             <Filter className="h-4 w-4 mr-1.5" />
@@ -179,12 +185,15 @@ const DashboardHeader = ({
             </div>
           )}
           
-          {selectedSources.length > 0 && (
-            <div className="flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-md text-xs">
+          {selectedSources.map(source => (
+            <div 
+              key={source}
+              className="flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-md text-xs"
+            >
               <Database className="h-3 w-3 mr-1" />
-              <span>{selectedSources.length} Data Source{selectedSources.length > 1 ? 's' : ''}</span>
+              <span>{source}</span>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>

@@ -258,11 +258,12 @@ function FailureTrends({ darkMode }) {
 
   const handleSourceChange = (source) => {
     setSelectedSources(prev => {
-      const sourceIndex = prev.indexOf(source.toLowerCase());
-      if (sourceIndex === -1) {
-        return [...prev, source.toLowerCase()];
+      const sourceId = source.toLowerCase();
+      if (prev.includes(sourceId)) {
+        return prev.filter(s => s !== sourceId);
+      } else {
+        return [...prev, sourceId];
       }
-      return prev.filter((_, index) => index !== sourceIndex);
     });
   };
 
@@ -481,7 +482,7 @@ function FailureTrends({ darkMode }) {
         title="CrashInsight AI" 
         description="Failure Trends Dashboard"
         sources={['Rally', 'Jira', 'ServiceNow']}
-        selectedSources={selectedSources}
+        selectedSources={selectedSources.map(s => s.charAt(0).toUpperCase() + s.slice(1))}
         onSourceChange={handleSourceChange}
         dateRange={dateRange}
         onDateRangeChange={handleDateRangeChange}
