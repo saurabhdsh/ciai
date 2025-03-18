@@ -962,16 +962,61 @@ const ServiceNowTrends = () => {
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 
-                const recentIncidents = filteredIncidents.filter(i => 
-                  i.OpenedDate && new Date(i.OpenedDate) >= thirtyDaysAgo
-                );
+                // Fix for GitHub Pages: Ensure consistent date comparison
+                const recentIncidents = filteredIncidents.filter(i => {
+                  if (!i.OpenedDate) return false;
+                  
+                  // Create a new Date object from the incident date
+                  const incidentDate = new Date(i.OpenedDate);
+                  
+                  // Ensure valid date before comparison
+                  if (isNaN(incidentDate.getTime())) {
+                    console.log(`Invalid date for MTBF calculation: ${i.OpenedDate}`);
+                    return false;
+                  }
+                  
+                  // Compare dates using timestamps to avoid timezone issues
+                  return incidentDate.getTime() >= thirtyDaysAgo.getTime();
+                });
                 
-                if (recentIncidents.length <= 1) {
+                console.log(`Found ${recentIncidents.length} incidents in last 30 days for MTBF calculation`);
+                
+                // Always show MTBF calculation unless we have no incidents at all
+                // This ensures consistent behavior between local and GitHub Pages
+                if (recentIncidents.length === 0) {
+                  // Use all incidents with valid dates if no recent ones
+                  const allValidIncidents = filteredIncidents.filter(i => 
+                    i.OpenedDate && !isNaN(new Date(i.OpenedDate).getTime())
+                  );
+                  
+                  if (allValidIncidents.length <= 1) {
+                    return (
+                      <div>
+                        <div style={{ fontSize: '36px', fontWeight: 'bold' }}>N/A</div>
+                        <div style={{ fontSize: '14px', color: 'rgba(0,0,0,0.45)' }}>
+                          Insufficient data for calculation
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Calculate based on all incidents
+                  const oldestIncident = new Date(Math.min(...allValidIncidents.map(i => new Date(i.OpenedDate).getTime())));
+                  const newestIncident = new Date(Math.max(...allValidIncidents.map(i => new Date(i.OpenedDate).getTime())));
+                  const totalDays = Math.max(1, Math.ceil((newestIncident - oldestIncident) / (1000 * 60 * 60 * 24)));
+                  
+                  // Total days in hours / number of incidents-1 (gaps between incidents)
+                  const mtbf = Math.round((totalDays * 24) / (allValidIncidents.length - 1));
+                  
+                  console.log(`Calculated MTBF using all ${allValidIncidents.length} incidents over ${totalDays} days: ${mtbf}h`);
+                  
                   return (
                     <div>
-                      <div style={{ fontSize: '36px', fontWeight: 'bold' }}>N/A</div>
+                      <div style={{ fontSize: '36px', fontWeight: 'bold', color: mtbf >= 72 ? '#52c41a' : mtbf >= 24 ? '#faad14' : '#ff4d4f' }}>
+                        {mtbf}h
+                      </div>
                       <div style={{ fontSize: '14px', color: 'rgba(0,0,0,0.45)' }}>
-                        Insufficient data for calculation
+                        Average time between all incidents
                       </div>
                     </div>
                   );

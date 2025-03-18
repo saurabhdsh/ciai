@@ -36,6 +36,46 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
     scrollToBottom();
   }, [messages]);
 
+  // Add data validation function to ensure consistent data structure
+  const validateAndFormatData = (dataContext) => {
+    if (!dataContext) {
+      console.error('No data context provided to AI assistant');
+      return null;
+    }
+
+    // Ensure all required fields exist
+    const validatedData = {
+      summary: {
+        totalIncidents: dataContext.summary?.totalIncidents || 0,
+        openIncidents: dataContext.summary?.openIncidents || 0,
+        resolvedIncidents: dataContext.summary?.resolvedIncidents || 0,
+        criticalIncidents: dataContext.summary?.criticalIncidents || 0,
+        avgResolutionTime: dataContext.summary?.avgResolutionTime || 0
+      },
+      trends: {
+        categories: dataContext.trends?.categories || [],
+        priorities: dataContext.trends?.priorities || [],
+        incidentsOverTime: (dataContext.trends?.incidentsOverTime || []).map(item => ({
+          month: item.month || '',
+          count: item.count || 0
+        }))
+      },
+      resolutionTimes: dataContext.resolutionTimes || [],
+      slaData: dataContext.slaData || [],
+      rootCauses: dataContext.rootCauses || [],
+      recentIncidents: (dataContext.recentIncidents || []).map(incident => ({
+        id: incident.id || 'Unknown',
+        title: incident.title || 'No title',
+        status: incident.status || 'Unknown',
+        priority: incident.priority || 0,
+        date: incident.date || 'Unknown date'
+      }))
+    };
+
+    console.log('Validated data for AI assistant:', validatedData);
+    return validatedData;
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     
@@ -47,8 +87,11 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
     
     // Simulate AI processing
     setTimeout(() => {
+      // Ensure consistent data structure before generating response
+      const validatedData = validateAndFormatData(allData);
+      
       // Add AI response
-      const aiResponse = generateAIResponse(inputValue, allData);
+      const aiResponse = generateAIResponse(inputValue, validatedData || {});
       setMessages(prev => [...prev, { role: 'system', content: aiResponse }]);
       setIsLoading(false);
     }, 2000 + Math.random() * 2000);
@@ -474,7 +517,7 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="ServiceNow AI Analysis"
-        data={allData}
+        data={validateAndFormatData(allData) || {}}
         chartType="comprehensive"
         selectedSources={selectedSources}
         dateRange={dateRange}
@@ -483,4 +526,4 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
   );
 };
 
-export default ServiceNowAIAssistant; 
+export default ServiceNowAIAssistant;
