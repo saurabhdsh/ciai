@@ -22,13 +22,14 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
-  BrainCircuit
+  BrainCircuit,
+  ServerCrash
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/failure-trends', icon: Home },
   { name: 'Failure Trends', href: '/failure-trends', icon: TrendingUp },
-  { name: 'Root Cause Analysis', href: '/root-cause', icon: BrainCircuit },
+  { name: 'ServiceNow Trends', href: '/servicenow-trends', icon: ServerCrash }
 ];
 
 function Layout({ children, toggleDarkMode, darkMode, onLogout, userInfo }) {
@@ -94,7 +95,7 @@ function Layout({ children, toggleDarkMode, darkMode, onLogout, userInfo }) {
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white">
                   <Zap className="h-4 w-4" />
                 </div>
-                <span className="ml-2 text-base font-semibold whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-yellow-700 dark:from-yellow-400 dark:to-yellow-500">CrashInsight AI</span>
+                <span className="ml-2 text-base font-semibold whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-yellow-700 dark:from-yellow-400 dark:to-yellow-500">ImpactFix AI</span>
               </Link>
             </div>
 
@@ -343,7 +344,7 @@ function Layout({ children, toggleDarkMode, darkMode, onLogout, userInfo }) {
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white">
                     <Zap className="h-4 w-4" />
                   </div>
-                  <span className="ml-2 font-semibold text-base whitespace-nowrap text-gray-900 dark:text-white">CrashInsight AI</span>
+                  <span className="ml-2 font-semibold text-base whitespace-nowrap text-gray-900 dark:text-white">ImpactFix AI</span>
                 </div>
                 <button
                   className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"

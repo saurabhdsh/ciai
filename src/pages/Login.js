@@ -64,7 +64,7 @@ const Login = ({ onLogin }) => {
               <Zap className="h-8 w-8 text-white" />
             </motion.div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 via-red-500 to-purple-600">
-              CrashInsight AI
+              ImpactFix AI
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               Sign in to access your dashboard

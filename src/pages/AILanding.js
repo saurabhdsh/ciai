@@ -23,8 +23,11 @@ import {
   Zap
 } from 'lucide-react';
 
-const AILanding = ({ onSourceSelection }) => {
-  const [selectedSources, setSelectedSources] = useState([]);
+const AILanding = () => {
+  const [selectedSources, setSelectedSources] = useState(() => {
+    const savedSources = localStorage.getItem('selectedSources');
+    return savedSources ? JSON.parse(savedSources) : [];
+  });
   const [projectKey, setProjectKey] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const [workspaceSelections, setWorkspaceSelections] = useState({});
@@ -200,14 +203,8 @@ const AILanding = ({ onSourceSelection }) => {
           proj => proj.id === projectSelections[source]
         )?.name
       }));
-
-      // Store selected sources in localStorage
-      localStorage.setItem('selectedSources', JSON.stringify(sourceConfigurations));
       
-      // Call the callback to update parent state
-      onSourceSelection();
-      
-      // Navigate to failure trends
+      // In a real app, this would connect to the selected data sources
       setTimeout(() => {
         navigate('/failure-trends', { 
           state: { 
@@ -245,7 +242,7 @@ const AILanding = ({ onSourceSelection }) => {
               <div className="flex items-center justify-center mb-4">
                 <Zap className="h-10 w-10 text-yellow-500 mr-2" />
                 <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 via-red-500 to-purple-600 dark:from-yellow-400 dark:via-red-400 dark:to-purple-400">
-                  CrashInsight AI
+                  ImpactFix AI
               </h1>
               </div>
               <div className="w-24 h-1 bg-gradient-to-r from-yellow-500 via-red-500 to-purple-600 mx-auto mb-4 rounded-full"></div>
@@ -394,7 +391,7 @@ const AILanding = ({ onSourceSelection }) => {
               <div className="flex items-center">
                 <Zap className="h-6 w-6 text-yellow-500 mr-2" />
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
-                  CrashInsight AI Configuration
+                  ImpactFix AI Configuration
               </h2>
             </div>
             </motion.div>
@@ -505,7 +502,7 @@ const AILanding = ({ onSourceSelection }) => {
                   <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/10 p-6 rounded-lg border border-yellow-100 dark:border-yellow-900/20">
                     <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-3 flex items-center">
                       <Zap className="h-4 w-4 mr-2" />
-                      CrashInsight AI Configuration Summary
+                      ImpactFix AI Configuration Summary
                     </h4>
                     <div className="text-sm text-gray-600 dark:text-gray-300">
                       <div className="space-y-3">
@@ -568,7 +565,7 @@ const AILanding = ({ onSourceSelection }) => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          <p>CrashInsight AI &copy; {new Date().getFullYear()} | Intelligent Crash Analysis Platform</p>
+          <p>ImpactFix AI &copy; {new Date().getFullYear()} | Intelligent Failure Analysis Platform</p>
         </motion.div>
       </div>
     </div>

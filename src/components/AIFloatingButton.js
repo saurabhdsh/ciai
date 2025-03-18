@@ -83,12 +83,17 @@ const AIFloatingButton = ({ allData, selectedSources, dateRange, position = 'flo
     // Prepare data context for the AI
     const dataContext = prepareDataContext();
     
-    // Generate AI response
-    const aiResponse = await generateAIResponse(inputValue, dataContext);
+    // Add a delay to simulate thinking (between 2-4 seconds)
+    const thinkingDelay = 2000 + Math.random() * 2000;
     
-    // Add AI response
-    setMessages(prev => [...prev, { role: 'system', content: aiResponse }]);
-    setIsLoading(false);
+    // Generate AI response with delay
+    setTimeout(async () => {
+      const aiResponse = await generateAIResponse(inputValue, dataContext);
+      
+      // Add AI response
+      setMessages(prev => [...prev, { role: 'system', content: aiResponse }]);
+      setIsLoading(false);
+    }, thinkingDelay);
   };
 
   const prepareDataContext = () => {
@@ -128,93 +133,91 @@ const AIFloatingButton = ({ allData, selectedSources, dateRange, position = 'flo
   };
 
   const generateAIResponse = async (question, dataContext) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Get actual data
+    const data = prepareAllDataForAnalysis();
+    
+    // Calculate open defects (total - resolved)
+    const openDefects = data.summary.totalFailures - data.summary.resolvedFailures;
+    
+    // Get defect type data
+    const defectTypes = data.defectTypes;
+    const totalDefects = defectTypes.datasets[0].data.reduce((a, b) => a + b, 0);
     
     // Source-specific responses
     const sourceResponses = {
-      'servicenow': {
-        'incidents': `Based on ServiceNow data:
-- Total Incidents: 34
-- Open Incidents: 12
-- In Progress: 8
-- Resolved: 14
-- Average Resolution Time: 4.2 days
-- Most Common Categories:
-  * System Performance: 35%
-  * Application Error: 28%
-  * Access Issues: 22%
-  * Other: 15%`,
-
-        'open incidents': `Current Open Incidents in ServiceNow:
-- Critical: 3 incidents
-- High: 5 incidents
-- Medium: 3 incidents
-- Low: 1 incident
-Most are related to system performance and application errors.
-Average age of open incidents: 3.5 days`,
-
-        'closed incidents': `Resolved Incidents in ServiceNow:
-- Total Resolved: 14 incidents
-- Resolution Time Breakdown:
-  * < 24 hours: 5 incidents
-  * 1-3 days: 6 incidents
-  * 3-7 days: 2 incidents
-  * > 7 days: 1 incident
-- Most common resolution categories:
-  * Configuration Update: 40%
-  * Code Fix: 35%
-  * Infrastructure Change: 25%`,
-
-        'priority': `ServiceNow Priority Distribution:
-- P1 (Critical): 8 incidents (24%)
-- P2 (High): 12 incidents (35%)
-- P3 (Medium): 10 incidents (29%)
-- P4 (Low): 4 incidents (12%)
-Most P1 incidents are related to system outages and data issues.`
-      },
-      
       'rally': {
-        'defects': `Based on Rally data:
-- Total Defects: 53
-- Open Defects: 18
-- In Progress: 15
-- Resolved: 20
-- Most Affected Areas:
-  * Authentication: 28%
-  * Data Processing: 25%
-  * UI Components: 22%
-  * API Integration: 15%
-  * Other: 10%`,
+        'open defects': `Current Open Defects Analysis:
+Total Open Defects: ${openDefects}
 
-        'open defects': `Current Open Defects in Rally:
-- Critical: 5 defects
-- High: 8 defects
-- Medium: 4 defects
-- Low: 1 defect
-Top affected features:
-- User Authentication
-- Data Synchronization
-- Report Generation`,
+Severity Breakdown of Open Defects:
+- Critical: ${data.summary.criticalFailures} defects
+- High: ${Math.floor(openDefects * 0.35)} defects
+- Medium: ${Math.floor(openDefects * 0.25)} defects
+- Low: ${Math.floor(openDefects * 0.15)} defects
 
-        'closed defects': `Resolved Defects in Rally:
-- Total Resolved: 20 defects
-- Average Resolution Time: 5.8 days
-- Resolution Categories:
-  * Code Fix: 45%
-  * Configuration Change: 30%
-  * Documentation Update: 15%
-  * Environment Fix: 10%`,
+Top Defect Categories:
+${defectTypes.labels.map((type, i) => {
+  const count = defectTypes.datasets[0].data[i];
+  const percentage = Math.round((count / totalDefects) * 100);
+  return `- ${type}: ${count} defects (${percentage}%)`;
+}).join('\n')}
 
-        'severity': `Rally Severity Distribution:
-- Critical: 12 defects (23%)
-- High: 18 defects (34%)
-- Medium: 15 defects (28%)
-- Low: 8 defects (15%)
-Most critical defects are in the Authentication and Data Processing modules.`
+Most Affected Areas:
+1. ${defectTypes.labels[0]}: ${defectTypes.datasets[0].data[0]} issues
+2. ${defectTypes.labels[1]}: ${defectTypes.datasets[0].data[1]} issues
+3. ${defectTypes.labels[2]}: ${defectTypes.datasets[0].data[2]} issues
+
+Average Age of Open Defects: ${(data.summary.avgResolutionTime * 0.6).toFixed(1)} days`,
+
+        'defects': `Current Defect Status Overview:
+- Total Defects: ${data.summary.totalFailures}
+- Open Defects: ${openDefects}
+- Resolved Defects: ${data.summary.resolvedFailures}
+- Critical Defects: ${data.summary.criticalFailures}
+
+Defect Type Distribution:
+${defectTypes.labels.map((type, i) => {
+  const count = defectTypes.datasets[0].data[i];
+  const percentage = Math.round((count / totalDefects) * 100);
+  return `- ${type}: ${count} issues (${percentage}%)`;
+}).join('\n')}
+
+Recent Failures:
+${data.recentFailures.map(failure => `- ${failure.id}: ${failure.title} (${failure.severity})`).join('\n')}
+
+Resolution Metrics:
+- Average Resolution Time: ${data.summary.avgResolutionTime} days
+- Resolution Rate: ${Math.round((data.summary.resolvedFailures / data.summary.totalFailures) * 100)}%`
       }
     };
 
+    // General responses
+    const generalResponses = {
+      'defect': `Current Defect Analysis:
+
+Total Active Defects: ${openDefects}
+Recently Resolved: ${data.summary.resolvedFailures}
+
+Top Defect Categories:
+${defectTypes.labels.map((type, i) => {
+  const count = defectTypes.datasets[0].data[i];
+  const percentage = Math.round((count / totalDefects) * 100);
+  return `- ${type}: ${count} issues (${percentage}%)`;
+}).join('\n')}
+
+Severity Distribution:
+${data.severityDistribution.labels.map((severity, i) => {
+  const count = data.severityDistribution.datasets[0].data[i];
+  const percentage = Math.round((count / data.summary.totalFailures) * 100);
+  return `- ${severity}: ${count} issues (${percentage}%)`;
+}).join('\n')}
+
+Recent Trends:
+- Resolution Rate: ${Math.round((data.summary.resolvedFailures / data.summary.totalFailures) * 100)}%
+- Average Time to Resolution: ${data.summary.avgResolutionTime} days
+- Critical Issues: ${data.summary.criticalFailures} (${Math.round((data.summary.criticalFailures / data.summary.totalFailures) * 100)}% of total)`
+    };
+    
     // Convert question to lowercase for matching
     const questionLower = question.toLowerCase();
     
@@ -229,36 +232,6 @@ Most critical defects are in the Authentication and Data Processing modules.`
       }
     }
 
-    // General responses for other questions
-    const generalResponses = {
-      'failure rate': `Based on our data, the overall failure rate is trending ${Math.random() > 0.5 ? 'down' : 'up'} by ${Math.floor(Math.random() * 15) + 5}% compared to the previous period. The current failure rate is approximately ${Math.floor(Math.random() * 5) + 2}.${Math.floor(Math.random() * 9)}% of total deployments.`,
-      
-      'defect': `The most common defect types are Data issues (32%), Authentication problems (24%), and UI/UX issues (18%). Data-related defects have increased by 12% since last month, which suggests we should focus on data validation and processing improvements.`,
-      
-      'lob': `The Banking LOB has the highest failure rate at 42%, followed by Finance at 28% and Insurance at 18%. Banking has seen a 15% increase in authentication failures in the last month, which is concerning and requires immediate attention.`,
-      
-      'critical': `There are currently 23 critical failures, representing 26% of all issues. The most concerning are in the Authentication system (8 critical issues) and Data Processing Pipeline (7 critical issues). 65% of critical issues are from the Banking LOB.`,
-      
-      'trend': `Failure trends show cyclical patterns with peaks occurring approximately every 2-3 weeks, which correlates with our deployment cycles. The most recent week shows ${Math.floor(Math.random() * 10) + 10} failures, which is ${Math.random() > 0.5 ? 'above' : 'below'} the 4-week average.`,
-      
-      'resolution': `The average resolution time is 5.2 days across all issues. Critical issues are resolved in 3.8 days on average, while low severity issues take 7.1 days. The Banking LOB has the fastest resolution time at 4.3 days, while Insurance takes the longest at 6.7 days.`,
-      
-      'authentication': `Authentication issues represent 24% of all failures. The most common problems are session management issues (42%), login failures (35%), and password reset functionality (23%). These issues are most prevalent in the Banking LOB (65%).`,
-      
-      'data': `Data-related issues are the most common defect type at 32%. These include data synchronization failures (45%), validation errors (30%), and calculation discrepancies (25%). The Finance LOB is most affected by these issues (52%).`,
-      
-      'performance': `Performance issues account for 15% of all failures. The most significant are slow API responses (40%), timeout during large data processing (35%), and memory leaks (25%). These issues primarily affect the Finance LOB's reporting systems.`,
-      
-      'security': `Security vulnerabilities represent 10% of all failures but 22% of critical issues. The most concerning are authentication bypass (3 issues), data leakage (2 issues), and CSRF vulnerabilities (2 issues). All of these require immediate attention.`,
-      
-      'recommendation': `Based on the current data, I recommend:
-1. Prioritize fixing authentication issues in the Banking LOB
-2. Implement enhanced data validation across all systems
-3. Review deployment processes to reduce cyclical failure patterns
-4. Establish cross-team review for critical issues
-5. Standardize severity and priority classification across teams`
-    };
-    
     // Check for matching keywords in general responses
     for (const [keyword, response] of Object.entries(generalResponses)) {
       if (questionLower.includes(keyword)) {
@@ -363,7 +336,7 @@ Please ask a specific question about any of these topics.`;
       </div>
       
       {isChatOpen && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-200 dark:border-purple-800/30 animate-fade-in-up fixed bottom-20 right-6 w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] flex flex-col">
+        <div className="fixed right-6 top-20 bottom-6 w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-200 dark:border-purple-800/30 animate-fade-in-up flex flex-col overflow-hidden z-50">
           <div className="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-sm font-medium text-gray-800 dark:text-white flex items-center">
               <BrainCircuit className="h-4 w-4 text-purple-500 mr-1.5" />
@@ -396,9 +369,53 @@ Please ask a specific question about any of these topics.`;
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200 flex items-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Thinking...
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-lg px-4 py-3 text-gray-800 dark:text-gray-200 max-w-[80%]">
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="relative h-8 w-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <BrainCircuit className="h-4 w-4 text-white animate-pulse" />
+                        <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-gray-800"></div>
+                      </div>
+                      <div className="font-medium text-purple-600 dark:text-purple-400 flex items-center">
+                        <span>Thinking</span>
+                        <span className="ml-1 animate-bounce">.</span>
+                        <span className="ml-0.5 animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+                        <span className="ml-0.5 animate-bounce" style={{ animationDelay: "0.4s" }}>.</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex space-x-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-300 dark:bg-purple-700 animate-pulse"></div>
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-400 dark:bg-purple-600 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-500 dark:bg-purple-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-600 dark:bg-purple-400 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-700 dark:bg-purple-300 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-24 animate-pulse"></div>
+                        <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded-full w-12 animate-pulse" style={{ animationDelay: '0.15s' }}></div>
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-20 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded-full w-16 animate-pulse"></div>
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-28 animate-pulse" style={{ animationDelay: '0.15s' }}></div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-20 animate-pulse"></div>
+                        <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded-full w-8 animate-pulse" style={{ animationDelay: '0.15s' }}></div>
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-14 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                      <Sparkles className="h-3 w-3 mr-1 text-yellow-500" />
+                      <span>Analyzing data and preparing insights</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

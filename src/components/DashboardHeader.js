@@ -29,7 +29,7 @@ const DashboardHeader = ({
 }) => {
   const [showSourceSelector, setShowSourceSelector] = useState(false);
   
-  // Predefined date ranges
+  // Predefined date ranges - keeping this for reference but not using it in the UI
   const dateRanges = [
     { id: '7', label: 'Last 7 days' },
     { id: '30', label: 'Last 30 days' },
@@ -58,7 +58,7 @@ const DashboardHeader = ({
           <div className="flex items-center">
             <Zap className="h-7 w-7 text-yellow-500 mr-2" />
             <div>
-              <h1 className="text-xl font-bold whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-yellow-700 dark:from-yellow-400 dark:to-yellow-600">{title || "CrashInsight AI"}</h1>
+              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-yellow-600 dark:from-yellow-400 dark:to-yellow-600">{title || "ImpactFix AI"}</h1>
               {description && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{description}</p>
               )}
@@ -125,18 +125,7 @@ const DashboardHeader = ({
               </AnimatePresence>
             </div>
             
-            {/* Date Range Selector */}
-            <select
-              value={dateRange}
-              onChange={(e) => onDateRangeChange(e)}
-              className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              {dateRanges.map(range => (
-                <option key={range.id} value={range.id}>
-                  {range.label}
-                </option>
-              ))}
-            </select>
+            {/* Date Range Selector - Removed */}
             
             {onRefresh && (
               <button
@@ -165,25 +154,14 @@ const DashboardHeader = ({
       </div>
       
       {/* Active filters display */}
-      {(selectedSources.length > 0 || dateRange) && (
+      {(selectedSources.length > 0) && (
         <div className="flex flex-wrap items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center text-gray-500 dark:text-gray-400">
             <Filter className="h-4 w-4 mr-1.5" />
             <span className="text-xs font-medium">Active Filters:</span>
           </div>
           
-          {dateRange && (
-            <div className="flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-md text-xs">
-              <Calendar className="h-3 w-3 mr-1" />
-              <span>
-                {dateRange === 'all' ? 'All time' : 
-                 dateRange === '7' ? 'Last 7 days' :
-                 dateRange === '30' ? 'Last 30 days' :
-                 dateRange === '90' ? 'Last 90 days' : 
-                 `Last ${dateRange} days`}
-              </span>
-            </div>
-          )}
+          {/* Date Range Filter - Removed */}
           
           {selectedSources.map(source => (
             <div 

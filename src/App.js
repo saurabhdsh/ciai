@@ -3,8 +3,9 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout';
 import FailureTrends from './pages/FailureTrends';
 import Login from './pages/Login';
-import RootCauseAnalysis from './pages/RootCauseAnalysis';
 import AILanding from './pages/AILanding';
+import DataSourceSelection from './pages/DataSourceSelection';
+import ServiceNowTrends from './pages/ServiceNowTrends';
 import './styles/animations.css';
 
 function App() {
@@ -25,8 +26,8 @@ function App() {
     return savedInfo ? JSON.parse(savedInfo) : null;
   });
 
-  const [hasSelectedSources, setHasSelectedSources] = useState(() => {
-    return localStorage.getItem('hasSelectedSources') === 'true';
+  const [dataSourceSelected, setDataSourceSelected] = useState(() => {
+    return localStorage.getItem('dataSourceSelected') === 'true';
   });
 
   useEffect(() => {
@@ -55,42 +56,32 @@ function App() {
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
     setIsAuthenticated(true);
     localStorage.setItem('isAuthenticated', 'true');
-    // Reset source selection on login
-    setHasSelectedSources(false);
-    localStorage.removeItem('hasSelectedSources');
+    
+    // Reset data source selection state to ensure user selects it after login
+    setDataSourceSelected(false);
+    localStorage.removeItem('dataSourceSelected');
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUserInfo(null);
-    setHasSelectedSources(false);
+    setDataSourceSelected(false);
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userInfo');
-    localStorage.removeItem('hasSelectedSources');
-    localStorage.removeItem('selectedSources');
+    localStorage.removeItem('dataSourceSelected');
   };
 
-  const handleSourceSelection = () => {
-    setHasSelectedSources(true);
-    localStorage.setItem('hasSelectedSources', 'true');
+  const handleDataSourceSelected = () => {
+    setDataSourceSelected(true);
+    localStorage.setItem('dataSourceSelected', 'true');
   };
 
   const ProtectedRoute = ({ children }) => {
     if (!isAuthenticated) {
       return <Navigate to="/login" replace />;
     }
-    
-    if (!hasSelectedSources) {
-      return <Navigate to="/ai-landing" replace />;
-    }
-
     return (
-      <Layout 
-        darkMode={darkMode} 
-        toggleDarkMode={toggleDarkMode} 
-        onLogout={handleLogout} 
-        userInfo={userInfo}
-      >
+      <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={handleLogout} userInfo={userInfo}>
         {children}
       </Layout>
     );
@@ -104,7 +95,7 @@ function App() {
             path="/login"
             element={
               isAuthenticated ? (
-                <Navigate to="/ai-landing" replace />
+                <Navigate to="/data-source-selection" replace />
               ) : (
                 <Login onLogin={handleLogin} />
               )
@@ -114,21 +105,29 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                hasSelectedSources ? (
-                  <Navigate to="/failure-trends" replace />
-                ) : (
-                  <Navigate to="/ai-landing" replace />
-                )
+                <Navigate to="/data-source-selection" replace />
               ) : (
                 <Navigate to="/login" replace />
               )
             }
           />
           <Route
+            path="/data-source-selection"
+            element={
+              <ProtectedRoute>
+                <DataSourceSelection onDataSourceSelected={handleDataSourceSelected} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/ai-landing"
             element={
               <ProtectedRoute>
-                <AILanding onSourceSelection={handleSourceSelection} />
+                {dataSourceSelected ? (
+                  <AILanding />
+                ) : (
+                  <Navigate to="/data-source-selection" replace />
+                )}
               </ProtectedRoute>
             }
           />
@@ -136,15 +135,23 @@ function App() {
             path="/failure-trends"
             element={
               <ProtectedRoute>
-                <FailureTrends />
+                {dataSourceSelected ? (
+                  <FailureTrends />
+                ) : (
+                  <Navigate to="/data-source-selection" replace />
+                )}
               </ProtectedRoute>
             }
           />
           <Route
-            path="/root-cause"
+            path="/servicenow-trends"
             element={
               <ProtectedRoute>
-                <RootCauseAnalysis />
+                {dataSourceSelected ? (
+                  <ServiceNowTrends />
+                ) : (
+                  <Navigate to="/data-source-selection" replace />
+                )}
               </ProtectedRoute>
             }
           />

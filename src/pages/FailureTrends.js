@@ -18,8 +18,16 @@ import {
   BrainCircuit,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles
+  Sparkles,
+  AlertOctagon,
+  ArrowRight
 } from 'lucide-react';
+import { 
+  Gauge, 
+  ChartsTooltip, 
+  ChartContainer,
+  ScatterChart
+} from '@mui/x-charts';
 
 import ChartComponent from '../components/ChartComponent';
 import DashboardCard from '../components/DashboardCard';
@@ -28,6 +36,7 @@ import DataSourceSelector from '../components/DataSourceSelector';
 import AIAnalysisButton from '../components/AIAnalysisButton';
 import AIAnalysisModal from '../components/AIAnalysisModal';
 import AIFloatingButton from '../components/AIFloatingButton';
+import MetricCard from '../components/MetricCard';
 
 import { 
   parseCSVString, 
@@ -41,7 +50,14 @@ import {
   getSourceStats,
   getSummaryStats
 } from '../services/csvService';
-import { getRecentFailures } from '../services/failureService';
+import { 
+  loadFailuresData,
+  calculateFailureTrendMetrics,
+  calculateSeverityBySource,
+  calculatePriorityBySource,
+  getSourceMetrics,
+  getRecentFailures
+} from '../services/failureService';
 
 // Animation variants
 const containerVariants = {
@@ -63,6 +79,97 @@ const itemVariants = {
   }
 };
 
+const FailureTrendsChart = ({ data }) => {
+  if (!data || !data.datasets || !data.labels) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500 dark:text-gray-400">No failure trend data available</p>
+      </div>
+    );
+  }
+
+  // Get color based on severity
+  const getSeverityColor = (severity) => {
+    const colors = {
+      'Critical': 'bg-red-600',
+      'High': 'bg-orange-500',
+      'Medium': 'bg-yellow-500',
+      'Low': 'bg-blue-500'
+    };
+    return colors[severity] || 'bg-gray-500';
+  };
+
+  return (
+    <div className="w-full p-4">
+      <div className="overflow-x-auto">
+        <div className="min-w-full">
+          {/* Month labels */}
+          <div className="flex text-sm text-gray-600 dark:text-gray-400 mb-6 pl-24">
+            {Array.from(new Set(data.labels.map(date => {
+              const [month] = date.split(' ');
+              return month;
+            }))).map((month, i) => (
+              <div key={i} className="flex-1 text-center">{month}</div>
+            ))}
+          </div>
+          
+          {/* Failure dots grid */}
+          {data.datasets.map((dataset, datasetIndex) => (
+            <div key={datasetIndex} className="mb-8">
+              {/* Severity label */}
+              <div className="flex items-center">
+                <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {dataset.label.split(' ')[0]}
+                </div>
+                {/* Dots */}
+                <div className="flex flex-1">
+                  {dataset.data.map((value, index) => (
+                    <div key={index} className="flex-1 flex items-center justify-center">
+                      {Array.from({ length: value }).map((_, dotIndex) => (
+                        <div
+                          key={dotIndex}
+                          className={`w-2 h-2 mx-0.5 rounded-full ${getSeverityColor(dataset.label.split(' ')[0])}`}
+                          title={`${dataset.label}: ${value} failures on ${data.labels[index]}`}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 flex items-center justify-center space-x-8">
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Low</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Medium</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-orange-500 mr-2"></div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">High</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-red-600 mr-2"></div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Critical</span>
+        </div>
+      </div>
+
+      <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+        Total Failures: {data.datasets.reduce((sum, dataset) => 
+          sum + dataset.data.reduce((a, b) => a + b, 0), 0
+        )}
+      </div>
+    </div>
+  );
+};
+
 function FailureTrends({ darkMode }) {
   const location = useLocation();
   const [csvData, setCsvData] = useState(null);
@@ -72,19 +179,20 @@ function FailureTrends({ darkMode }) {
   const [defectTypeData, setDefectTypeData] = useState(null);
   const [defectStatusData, setDefectStatusData] = useState(null);
   const [lobData, setLobData] = useState(null);
-  const [severityData, setSeverityData] = useState(null);
-  const [priorityData, setPriorityData] = useState(null);
+  const [severityData, setSeverityData] = useState({});
+  const [priorityData, setPriorityData] = useState({});
   const [recentFailures, setRecentFailures] = useState([]);
   const [aiInsights, setAIInsights] = useState([]);
-  const [sourceStats, setSourceStats] = useState({});
+  const [sourceStats, setSourceStats] = useState([]);
   const [selectedSources, setSelectedSources] = useState(['rally', 'jira', 'servicenow']);
-  const [dateRange, setDateRange] = useState({
-    start: (() => {
-      const date = new Date();
-      date.setDate(date.getDate() - 30);
-      return date.toISOString().split('T')[0];
-    })(),
-    end: new Date().toISOString().split('T')[0]
+  const [dateRange, setDateRange] = useState(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
   });
   const [stats, setStats] = useState({
     totalFailures: 0,
@@ -92,7 +200,7 @@ function FailureTrends({ darkMode }) {
     resolvedFailures: 0,
     avgResolutionTime: 0
   });
-  const [sourceConfigurations, setSourceConfigurations] = useState([
+  const [sourceConfigurations] = useState([
     { source: 'Rally', workspaceName: 'Enterprise', projectName: 'Banking Platform' },
     { source: 'Jira', workspaceName: 'Finance Team', projectName: 'Payment Processing' },
     { source: 'ServiceNow', workspaceName: 'IT Operations', projectName: 'Insurance Claims' }
@@ -115,26 +223,155 @@ function FailureTrends({ darkMode }) {
     }
   }, [csvData]);
   
-  // Add debugging useEffect for trendData
+  // Update the trend data debugging useEffect
   useEffect(() => {
     console.log('Trend data updated:', trendData);
     
-    // If trend data is still null after analysis, create mock data
+    // If trend data is null after analysis, create empty chart data
     if (!trendData && !loading) {
-      console.log('Creating mock trend data as fallback');
-      setTrendData(createMockTrendData());
+      console.log('Setting empty trend data as fallback');
+      setTrendData({
+        labels: [],
+        datasets: [{
+        label: 'Failures',
+          data: [],
+          borderColor: 'rgba(59, 130, 246, 0.8)',
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+          pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      });
     }
   }, [trendData, loading]);
 
-  // Load data on component mount
+  // Update the useEffect for data loading
   useEffect(() => {
-    loadCSVData();
-    
-    // Set up mock data if needed
-    if (!trendData) {
-      console.log('No trend data available, creating mock data');
-      setTrendData(createMockTrendData());
-    }
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Get the base URL for the current environment
+        const baseUrl = process.env.PUBLIC_URL || '';
+        
+        // Try to fetch the data with different possible paths
+        let response;
+        const possiblePaths = [
+          `${baseUrl}/data/failures.csv`,
+          '/data/failures.csv',
+          './data/failures.csv',
+          '/ReactFailure/data/failures.csv'
+        ];
+
+        for (const path of possiblePaths) {
+          try {
+            console.log('Trying to fetch from:', path);
+            response = await fetch(path);
+            if (response.ok) {
+              console.log('Successfully fetched from:', path);
+              break;
+            }
+          } catch (err) {
+            console.log('Failed to fetch from:', path);
+          }
+        }
+
+        if (!response || !response.ok) {
+          throw new Error('Failed to fetch data from all possible paths');
+        }
+
+        const csvText = await response.text();
+        console.log('CSV data length:', csvText.length);
+        
+        const failuresData = parseCSVString(csvText);
+        
+        if (failuresData && failuresData.length > 0) {
+          console.log('Successfully parsed CSV data:', failuresData.length, 'records');
+          console.log('Sample record:', failuresData[0]);
+          
+          // Set the CSV data first
+          setCsvData(failuresData);
+          
+          // Prepare and set trend data first
+          const trendChartData = analyzeFailureTrends(failuresData);
+          console.log('Setting trend data:', trendChartData);
+          setTrendData(trendChartData);
+
+          // Update recent failures
+          const recentFailuresData = getRecentFailures(failuresData, 10);
+          console.log('Recent failures:', recentFailuresData.length);
+          setRecentFailures(recentFailuresData);
+
+          // Calculate basic stats
+          const totalFailures = failuresData.length;
+          const criticalFailures = failuresData.filter(f => 
+            (f.Severity || '').toLowerCase() === 'critical'
+          ).length;
+          const resolvedFailures = failuresData.filter(f => 
+            (f.Status || '').toLowerCase() === 'resolved'
+          ).length;
+          
+          // Calculate average resolution time
+          const resolvedWithDates = failuresData.filter(f => 
+            (f.Status || '').toLowerCase() === 'resolved' && 
+            f.Date && 
+            f['Resolved Date']
+          );
+          
+          let avgResolutionTime = 0;
+          if (resolvedWithDates.length > 0) {
+            const totalDays = resolvedWithDates.reduce((sum, f) => {
+              const start = new Date(f.Date);
+              const end = new Date(f['Resolved Date']);
+              return sum + Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            }, 0);
+            avgResolutionTime = Math.round(totalDays / resolvedWithDates.length);
+          }
+
+          // Update stats
+          setStats({
+            totalFailures,
+            criticalFailures,
+            resolvedFailures,
+            avgResolutionTime
+          });
+
+          // Update other chart data
+          const defectTypeChartData = analyzeDefectTypes(failuresData);
+          setDefectTypeData(defectTypeChartData);
+
+          const defectStatusChartData = analyzeDefectStatus(failuresData);
+          setDefectStatusData(defectStatusChartData);
+
+          const lobChartData = analyzeFailuresByLOB(failuresData);
+          setLobData(lobChartData);
+
+          const severityChartData = analyzeSeverityDistribution(failuresData);
+          setSeverityData(severityChartData);
+
+          const priorityChartData = analyzePriorityDistribution(failuresData);
+          setPriorityData(priorityChartData);
+
+          const sourceStatsData = getSourceStats(failuresData);
+          setSourceStats(sourceStatsData);
+
+          setError(null);
+        } else {
+          throw new Error('No valid data found in CSV');
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   // Re-analyze data when selected sources change
@@ -143,26 +380,6 @@ function FailureTrends({ darkMode }) {
       analyzeData();
     }
   }, [selectedSources, dateRange]);
-
-  const loadCSVData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Fetch CSV data with source filtering
-      const data = await fetchCSVData();
-      setCsvData(data);
-      
-      // Analyze the data
-      analyzeData(data);
-      
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading CSV data:', err);
-      setError('Failed to load data. Please try again later.');
-      setLoading(false);
-    }
-  };
 
   const analyzeData = (data = csvData) => {
     if (!data) return;
@@ -209,8 +426,8 @@ function FailureTrends({ darkMode }) {
       
       // Calculate stats using the updated getSummaryStats function
       const summaryStats = getSummaryStats(filteredData);
-      setStats(summaryStats);
-      
+        setStats(summaryStats);
+        
     } catch (err) {
       console.error('Error analyzing data:', err);
       setError('Failed to analyze data. Please try again later.');
@@ -261,7 +478,7 @@ function FailureTrends({ darkMode }) {
       const sourceId = source.toLowerCase();
       if (prev.includes(sourceId)) {
         return prev.filter(s => s !== sourceId);
-      } else {
+        } else {
         return [...prev, sourceId];
       }
     });
@@ -393,7 +610,7 @@ function FailureTrends({ darkMode }) {
       };
       
       setAiModalData(enhancedData);
-      } else {
+        } else {
       setAiModalData(data);
     }
     
@@ -441,27 +658,50 @@ function FailureTrends({ darkMode }) {
     return { labels, datasets, rawData: sourceStats };
   };
 
-  // Function to create mock trend data
-  const createMockTrendData = () => {
-    console.log('Creating mock trend data directly in component');
-    
-    // Generate dates for the last 30 days
-    const dates = [];
-    const now = new Date();
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      dates.push(date.toISOString().split('T')[0]);
+  // Replace createMockTrendData with prepareTrendData
+  const prepareTrendData = () => {
+    if (!csvData || !Array.isArray(csvData) || csvData.length === 0) {
+      console.log('No CSV data available for trend analysis');
+      return null;
     }
+
+    console.log('Preparing trend data from', csvData.length, 'records');
+
+    // Get date range for the last 30 days
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+
+    // Create a map of dates
+    const dateMap = {};
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      dateMap[dateStr] = 0;
+    }
+
+    // Count failures by date
+    csvData.forEach(failure => {
+      try {
+        const date = new Date(failure.Date || failure.date);
+        if (!isNaN(date.getTime())) {
+          const dateStr = date.toISOString().split('T')[0];
+          if (dateStr in dateMap) {
+            dateMap[dateStr]++;
+          }
+        }
+      } catch (error) {
+        console.error('Error processing date for failure:', failure);
+      }
+    });
+
+    // Sort dates and prepare chart data
+    const sortedDates = Object.keys(dateMap).sort();
     
-    // Generate random data for failures
-    const failureData = dates.map(() => Math.floor(Math.random() * 10) + 1);
-    
-    return {
-      labels: dates,
-      datasets: [{
+    const chartData = {
+      labels: sortedDates,
+            datasets: [{
         label: 'Failures',
-        data: failureData,
+        data: sortedDates.map(date => dateMap[date]),
         borderColor: 'rgba(59, 130, 246, 0.8)',
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         borderWidth: 2,
@@ -474,19 +714,268 @@ function FailureTrends({ darkMode }) {
         pointHoverRadius: 6
       }]
     };
+
+    console.log('Generated trend chart data:', chartData);
+    return chartData;
+  };
+
+  // Update the chart data preparation functions
+  const prepareSeverityChartData = () => {
+    if (!csvData || csvData.length === 0) return null;
+
+    // Count failures by severity for each source
+    const sourceData = {};
+    csvData.forEach(failure => {
+      const source = failure.Source || 'Unknown';
+      const severity = failure.Severity || 'Unknown';
+      
+      if (!sourceData[source]) {
+        sourceData[source] = {
+          Critical: 0,
+          High: 0,
+          Medium: 0,
+          Low: 0
+        };
+      }
+      sourceData[source][severity]++;
+    });
+
+    // Prepare data for chart
+    const labels = Object.keys(sourceData);
+    const datasets = [
+      {
+        label: 'Critical',
+        data: labels.map(source => sourceData[source].Critical),
+        backgroundColor: 'rgba(239, 68, 68, 0.7)', // red
+      },
+      {
+        label: 'High',
+        data: labels.map(source => sourceData[source].High),
+        backgroundColor: 'rgba(245, 158, 11, 0.7)', // orange
+      },
+      {
+        label: 'Medium',
+        data: labels.map(source => sourceData[source].Medium),
+        backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue
+      },
+      {
+        label: 'Low',
+        data: labels.map(source => sourceData[source].Low),
+        backgroundColor: 'rgba(16, 185, 129, 0.7)', // green
+      }
+    ];
+
+    return { labels, datasets };
+  };
+
+  const preparePriorityChartData = () => {
+    if (!csvData || csvData.length === 0) return null;
+
+    // Count failures by priority for each source
+    const sourceData = {};
+    csvData.forEach(failure => {
+      const source = failure.Source || 'Unknown';
+      const priority = failure.Priority || 'Unknown';
+      
+      if (!sourceData[source]) {
+        sourceData[source] = {
+          P1: 0,
+          P2: 0,
+          P3: 0,
+          P4: 0
+        };
+      }
+      sourceData[source][priority]++;
+    });
+
+    // Prepare data for chart
+    const labels = Object.keys(sourceData);
+    const datasets = [
+      {
+        label: 'P1',
+        data: labels.map(source => sourceData[source].P1),
+        backgroundColor: 'rgba(239, 68, 68, 0.7)', // red
+      },
+      {
+        label: 'P2',
+        data: labels.map(source => sourceData[source].P2),
+        backgroundColor: 'rgba(245, 158, 11, 0.7)', // orange
+      },
+      {
+        label: 'P3',
+        data: labels.map(source => sourceData[source].P3),
+        backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue
+      },
+      {
+        label: 'P4',
+        data: labels.map(source => sourceData[source].P4),
+        backgroundColor: 'rgba(16, 185, 129, 0.7)', // green
+      }
+    ];
+
+    return { labels, datasets };
+  };
+
+  const prepareDefectTypeData = () => {
+    if (!csvData || csvData.length === 0) return null;
+
+    const defectTypes = {};
+    csvData.forEach(failure => {
+      const type = failure['Defect Type'] || 'Unknown';
+      defectTypes[type] = (defectTypes[type] || 0) + 1;
+    });
+
+    const sortedTypes = Object.entries(defectTypes)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+
+    return {
+      labels: sortedTypes.map(([type]) => type),
+            datasets: [{
+        label: 'Defect Types',
+        data: sortedTypes.map(([,count]) => count),
+              backgroundColor: [
+          'rgba(59, 130, 246, 0.7)',
+          'rgba(16, 185, 129, 0.7)',
+          'rgba(245, 158, 11, 0.7)',
+          'rgba(239, 68, 68, 0.7)',
+          'rgba(139, 92, 246, 0.7)'
+        ]
+      }]
+    };
+  };
+
+  const prepareDefectStatusData = () => {
+    if (!csvData || csvData.length === 0) return null;
+
+    const statusCounts = {
+      Open: 0,
+      'In Progress': 0,
+      Resolved: 0
+    };
+
+    csvData.forEach(failure => {
+      const status = failure.Status || 'Unknown';
+      if (status in statusCounts) {
+        statusCounts[status]++;
+      }
+    });
+
+    return {
+      labels: Object.keys(statusCounts),
+            datasets: [{
+        data: Object.values(statusCounts),
+              backgroundColor: [
+          'rgba(239, 68, 68, 0.7)',
+          'rgba(245, 158, 11, 0.7)',
+          'rgba(16, 185, 129, 0.7)'
+        ]
+      }]
+    };
+  };
+
+  const prepareLOBData = () => {
+    if (!csvData || csvData.length === 0) return null;
+
+    const lobCounts = {};
+    csvData.forEach(failure => {
+      const lob = failure.LOB || 'Unknown';
+      lobCounts[lob] = (lobCounts[lob] || 0) + 1;
+    });
+
+    const sortedLOBs = Object.entries(lobCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3);
+
+    return {
+      labels: sortedLOBs.map(([lob]) => lob),
+      datasets: [{
+        label: 'Failures by LOB',
+        data: sortedLOBs.map(([,count]) => count),
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.7)',
+          'rgba(245, 158, 11, 0.7)',
+          'rgba(16, 185, 129, 0.7)'
+        ]
+      }]
+    };
+  };
+
+  // Update the Recent Failures section
+  const getRecentFailuresData = () => {
+    if (!csvData || !Array.isArray(csvData) || csvData.length === 0) {
+      console.log('No CSV data available for recent failures');
+      return [];
+    }
+
+    // Create a copy of the data for sorting
+    const sortedData = [...csvData].sort((a, b) => {
+      const dateA = new Date(a.Date);
+      const dateB = new Date(b.Date);
+      return dateB - dateA;
+    });
+
+    // Take the 10 most recent failures
+    const recentData = sortedData.slice(0, 10).map(failure => ({
+      id: failure.ID,
+      title: failure.Title,
+      description: failure.Description,
+      date: failure.Date,
+      severity: failure.Severity,
+      status: failure.Status,
+      source: failure.Source
+    }));
+
+    console.log('Recent failures data:', recentData);
+    return recentData;
+  };
+
+  // Add refreshData function
+  const refreshData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/data/failures.csv');
+      const csvText = await response.text();
+      const failuresData = parseCSVString(csvText);
+      
+      if (failuresData && failuresData.length > 0) {
+        const trendMetrics = calculateFailureTrendMetrics(failuresData);
+        const severityData = calculateSeverityBySource(failuresData);
+        const priorityData = calculatePriorityBySource(failuresData);
+        const sourceMetrics = getSourceMetrics(failuresData);
+        const recentFailures = getRecentFailures(failuresData, { days: 30, limit: 10 });
+
+        setStats({
+          totalFailures: trendMetrics.totalFailures,
+          criticalFailures: trendMetrics.criticalFailures,
+          resolvedFailures: trendMetrics.resolvedFailures,
+          avgResolutionTime: trendMetrics.averageResolutionTime
+        });
+
+        setSourceStats(sourceMetrics);
+        setSeverityData(severityData);
+        setPriorityData(priorityData);
+        setRecentFailures(recentFailures);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setError('Failed to refresh data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-        title="CrashInsight AI" 
+        title="ImpactFix AI" 
         description="Failure Trends Dashboard"
         sources={['Rally', 'Jira', 'ServiceNow']}
         selectedSources={selectedSources.map(s => s.charAt(0).toUpperCase() + s.slice(1))}
         onSourceChange={handleSourceChange}
-        dateRange={dateRange}
+        dateRange="30"
         onDateRangeChange={handleDateRangeChange}
-        onRefresh={loadCSVData}
+        onRefresh={refreshData}
         onExport={handleExport}
         isLoading={loading}
       >
@@ -546,7 +1035,7 @@ function FailureTrends({ darkMode }) {
 
         {/* Source Configuration Section */}
         {sourceConfigurations.length > 0 && (
-          <motion.div
+      <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -586,7 +1075,7 @@ function FailureTrends({ darkMode }) {
                          config.source === 'Jira' ? <AlertTriangle className="h-4 w-4" /> :
                          <Database className="h-4 w-4" />}
               </div>
-                      <div>
+        <div>
                         <div className="font-medium text-gray-800 dark:text-white">{config.source}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {config.projectName} ({config.workspaceName})
@@ -619,6 +1108,54 @@ function FailureTrends({ darkMode }) {
           </motion.div>
         )}
         
+        {/* Connected Data Sources */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {sourceStats && Object.entries(sourceStats).map(([sourceName, source]) => {
+            // Only show configured sources that are selected
+            const isSelected = selectedSources.some(s => 
+              sourceName.toLowerCase().includes(s.toLowerCase())
+            );
+            
+            if (!isSelected) return null;
+            
+            return (
+              <div key={sourceName} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{sourceName}</h3>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    (source.open + source.inProgress) > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {(source.open + source.inProgress) > 0 ? `${source.open + source.inProgress} Pending` : 'All Resolved'}
+              </div>
+            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{source.total}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Total Issues</div>
+              </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{source.critical}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Critical</div>
+            </div>
+              </div>
+                <div className="mt-4">
+                  <div className="relative pt-1">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                      Resolution Rate: {Math.round((source.resolved / source.total) * 100)}%
+            </div>
+                    <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                      <div
+                        className="bg-green-500 rounded"
+                        style={{ width: `${(source.resolved / source.total) * 100}%` }}
+                      />
+              </div>
+            </div>
+                </div>
+              </div>
+            );
+          })}
+          </div>
+
         {/* Stats Cards */}
         <motion.div 
           variants={itemVariants}
@@ -665,69 +1202,23 @@ function FailureTrends({ darkMode }) {
         {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DashboardCard
-              title="Failure Trends Over Time"
-            subtitle={`Tracking ${selectedSources.join(', ')} failures across ${dateRange.start} to ${dateRange.end}`}
-            isLoading={loading}
-            headerAction={
-              <AIAnalysisButton 
-                onClick={() => openAiAnalysisModal('Failure Trends Over Time', createMockTrendData(), 'line')} 
-                variant="default"
-              />
-            }
-          >
-            <div className="space-y-4">
-              {/* Direct implementation of chart with mock data */}
-                <ChartComponent
-                  type="line"
-                data={createMockTrendData()}
-                options={{
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      title: {
-                        display: true,
-                        text: 'Number of Failures'
-                      }
-                    },
-                    x: {
-                      title: {
-                        display: true,
-                        text: 'Time Period'
-                      }
-                    }
-                  },
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        title: function(tooltipItems) {
-                          return `Date: ${tooltipItems[0].label}`;
-                        },
-                        label: function(context) {
-                          return `Failures: ${context.parsed.y}`;
-                        }
-                      }
-                    },
-                    legend: {
-                      position: 'top',
-                    }
-                  },
-                  responsive: true,
-                  maintainAspectRatio: false
-                }}
-                  height={300}
+              title="Failure Trends Analysis"
+              subtitle={`Analyzing failure patterns across ${selectedSources.join(', ')}`}
+              isLoading={loading}
+              headerAction={
+                <AIAnalysisButton 
+                  onClick={() => openAiAnalysisModal('Failure Trends Analysis', trendData, 'line')} 
+                  variant="default"
                 />
-              
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
-                  <TrendingUp className="h-4 w-4 mr-1.5 text-blue-500" />
-                  Trend Analysis
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Failure trends show a {Math.random() > 0.5 ? 'decreasing' : 'increasing'} pattern over the selected period. 
-                  The highest number of failures occurred on {new Date().toLocaleDateString()}, with {Math.floor(Math.random() * 10) + 5} reported issues.
-                </p>
-              </div>
-            </div>
+              }
+            >
+              {trendData ? (
+                <FailureTrendsChart data={trendData} />
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-gray-500 dark:text-gray-400">No failure trend data available</p>
+                </div>
+              )}
             </DashboardCard>
 
             <DashboardCard
@@ -751,7 +1242,7 @@ function FailureTrends({ darkMode }) {
                   height={300}
                 />
                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-md border border-indigo-100 dark:border-indigo-800/30">
-                  <h4 className="text-sm font-medium text-indigo-700 dark:text-indigo-400 flex items-center">
+                  <h4 className="text-sm font-medium text-indigo-900 dark:text-indigo-300 flex items-center">
                     <BrainCircuit className="h-4 w-4 mr-1" />
                     Key Insights
                   </h4>
@@ -786,101 +1277,101 @@ function FailureTrends({ darkMode }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DashboardCard
               title="Defect Status"
-            subtitle={`Current status distribution across ${selectedSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}`}
-            isLoading={loading}
-            headerAction={
-              defectStatusData ? (
-                <AIAnalysisButton 
-                  onClick={() => openAiAnalysisModal('Defect Status', defectStatusData, 'doughnut')} 
-                  variant="default"
-                />
-              ) : null
-            }
+              subtitle={`Current status distribution across ${selectedSources.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}`}
+              isLoading={loading}
+              headerAction={
+                defectStatusData ? (
+                  <AIAnalysisButton 
+                    onClick={() => openAiAnalysisModal('Defect Status', defectStatusData, 'doughnut')} 
+                    variant="default"
+                  />
+                ) : null
+              }
             >
-            {defectStatusData ? (
-              <div className="space-y-4">
+              {defectStatusData ? (
+                <div className="space-y-4">
                 <ChartComponent
                   type="doughnut"
                   data={defectStatusData}
                   height={300}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-center">
-                    <div className="text-sm text-blue-700 dark:text-blue-400">Open</div>
-                    <div className="font-semibold text-blue-800 dark:text-blue-300">
-                      {defectStatusData?.datasets[0]?.data[0] || 0}%
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-center">
+                      <div className="text-sm text-blue-700 dark:text-blue-400">Open</div>
+                      <div className="font-semibold text-blue-800 dark:text-blue-300">
+                        {defectStatusData?.datasets[0]?.data[0] || 0}%
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-center">
-                    <div className="text-sm text-yellow-700 dark:text-yellow-400">In Progress</div>
-                    <div className="font-semibold text-yellow-800 dark:text-yellow-300">
-                      {defectStatusData?.datasets[0]?.data[1] || 0}%
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-center">
+                      <div className="text-sm text-yellow-700 dark:text-yellow-400">In Progress</div>
+                      <div className="font-semibold text-yellow-800 dark:text-yellow-300">
+                        {defectStatusData?.datasets[0]?.data[1] || 0}%
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-center">
-                    <div className="text-sm text-green-700 dark:text-green-400">Resolved</div>
-                    <div className="font-semibold text-green-800 dark:text-green-300">
-                      {defectStatusData?.datasets[0]?.data[2] || 0}%
+                    <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-center">
+                      <div className="text-sm text-green-700 dark:text-green-400">Resolved</div>
+                      <div className="font-semibold text-green-800 dark:text-green-300">
+                        {defectStatusData?.datasets[0]?.data[2] || 0}%
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                No status data available
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                  No status data available
+                </div>
               )}
             </DashboardCard>
 
             <DashboardCard
               title="Failures by Line of Business"
-            subtitle="Distribution across business domains"
-            isLoading={loading}
-            headerAction={
-              lobData ? (
-                <AIAnalysisButton 
-                  onClick={() => openAiAnalysisModal('Failures by Line of Business', lobData, 'bar')} 
-                  variant="default"
-                />
-              ) : null
-            }
+              subtitle="Distribution across business domains"
+              isLoading={loading}
+              headerAction={
+                lobData ? (
+                  <AIAnalysisButton 
+                    onClick={() => openAiAnalysisModal('Failures by Line of Business', lobData, 'bar')} 
+                    variant="default"
+                  />
+                ) : null
+              }
             >
-            {lobData ? (
-              <div className="space-y-4">
+              {lobData ? (
+                <div className="space-y-4">
                 <ChartComponent
                   type="bar"
                   data={lobData}
                   height={300}
                 />
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md border border-amber-100 dark:border-amber-800/30">
-                  <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center">
-                    <BrainCircuit className="h-4 w-4 mr-1" />
-                    Business Impact Analysis
-                  </h4>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    <li className="flex items-start">
-                      <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mr-2 mt-0.5">
-                        <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300">
-                        {lobData?.labels[0] || 'Banking'} has the highest failure rate ({Math.max(...(lobData?.datasets[0]?.data || [0]))})
-                      </span>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mr-2 mt-0.5">
-                        <Users className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300">
-                        Recommend focused QA resources for {lobData?.labels.slice(0, 2).join(' and ')} teams
-                      </span>
-                    </li>
-                  </ul>
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md border border-amber-100 dark:border-amber-800/30">
+                    <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center">
+                      <BrainCircuit className="h-4 w-4 mr-1" />
+                      Business Impact Analysis
+                    </h4>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      <li className="flex items-start">
+                        <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mr-2 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {lobData?.labels[0] || 'Banking'} has the highest failure rate ({Math.max(...(lobData?.datasets[0]?.data || [0]))})
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mr-2 mt-0.5">
+                          <Users className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Recommend focused QA resources for {lobData?.labels.slice(0, 2).join(' and ')} teams
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                No LOB data available
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                  No LOB data available
+                </div>
               )}
             </DashboardCard>
           </div>
@@ -889,102 +1380,106 @@ function FailureTrends({ darkMode }) {
             <DashboardCard
               title="Severity Distribution"
               subtitle="Breakdown of failures by severity level"
-            isLoading={loading}
-            headerAction={
-              severityData ? (
-                <AIAnalysisButton 
-                  onClick={() => openAiAnalysisModal('Severity Distribution', severityData, 'pie')} 
-                  variant="default"
-                />
-              ) : null
-            }
+              isLoading={loading}
+              headerAction={
+                severityData && Object.keys(severityData).length > 0 ? (
+                  <AIAnalysisButton 
+                    onClick={() => openAiAnalysisModal('Severity Distribution', severityData, 'pie')} 
+                    variant="default"
+                  />
+                ) : null
+              }
             >
-            {severityData ? (
-              <div className="space-y-4">
+              {severityData && Object.keys(severityData).length > 0 ? (
+                <div className="space-y-4">
                 <ChartComponent
                   type="pie"
                   data={severityData}
                   height={300}
                 />
-                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800/30">
-                  <h4 className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Critical Issues Analysis
-                  </h4>
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                    {severityData?.datasets[0]?.data[0] > 20 ? 
-                      `High percentage (${severityData?.datasets[0]?.data[0]}%) of Critical issues requires immediate attention` : 
-                      `Critical issues (${severityData?.datasets[0]?.data[0]}%) are within acceptable range`}
-                  </p>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Critical: {severityData?.datasets[0]?.data[0]}%</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">High: {severityData?.datasets[0]?.data[1]}%</span>
+                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800/30">
+                    <h4 className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      Critical Issues Analysis
+                    </h4>
+                    <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                      {severityData?.datasets?.[0]?.data?.[0] > 20 ? 
+                        `High percentage (${severityData.datasets[0].data[0]}%) of Critical issues requires immediate attention` : 
+                        `Critical issues (${severityData.datasets[0].data[0] || 0}%) are within acceptable range`}
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          Critical: {severityData?.datasets?.[0]?.data?.[0] || 0}%
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          High: {severityData?.datasets?.[0]?.data?.[1] || 0}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                No severity data available
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                  No severity data available
+                </div>
               )}
             </DashboardCard>
 
             <DashboardCard
               title="Priority Distribution"
               subtitle="Breakdown of failures by priority level"
-            isLoading={loading}
-            headerAction={
-              priorityData ? (
-                <AIAnalysisButton 
-                  onClick={() => openAiAnalysisModal('Priority Distribution', priorityData, 'pie')} 
-                  variant="default"
-                />
-              ) : null
-            }
+              isLoading={loading}
+              headerAction={
+                priorityData?.datasets?.length > 0 ? (
+                  <AIAnalysisButton 
+                    onClick={() => openAiAnalysisModal('Priority Distribution', priorityData, 'pie')} 
+                    variant="default"
+                  />
+                ) : null
+              }
             >
-            {priorityData ? (
-              <div className="space-y-4">
+              {priorityData?.datasets?.length > 0 ? (
+                <div className="space-y-4">
                 <ChartComponent
-                  type="pie"
+                    type="pie"
                   data={priorityData}
                   height={300}
                 />
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-100 dark:border-purple-800/30">
-                  <h4 className="text-sm font-medium text-purple-700 dark:text-purple-400 flex items-center">
-                    <BrainCircuit className="h-4 w-4 mr-1" />
-                    Priority Insights
-                  </h4>
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                    {priorityData?.datasets[0]?.data[0] > 30 ? 
-                      `High percentage (${priorityData?.datasets[0]?.data[0]}%) of P1 issues indicates potential resource constraints` : 
-                      `P1 issues (${priorityData?.datasets[0]?.data[0]}%) are being managed effectively`}
-                  </p>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {selectedSources.map((source, index) => (
-                      <div key={index} className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full ${
-                          source === 'rally' ? 'bg-blue-500' :
-                          source === 'jira' ? 'bg-purple-500' :
-                          'bg-green-500'
-                        } mr-2`}></div>
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {source.charAt(0).toUpperCase() + source.slice(1)}: {Math.round(100/selectedSources.length)}%
-                        </span>
-                      </div>
-                    ))}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-100 dark:border-purple-800/30">
+                    <h4 className="text-sm font-medium text-purple-700 dark:text-purple-400 flex items-center">
+                      <BrainCircuit className="h-4 w-4 mr-1" />
+                      Priority Insights
+                    </h4>
+                    <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                      {(priorityData?.datasets?.[0]?.data?.[0] || 0) > 30 ? 
+                        `High percentage (${priorityData.datasets[0].data[0]}%) of P1 issues indicates potential resource constraints` : 
+                        `P1 issues (${priorityData?.datasets?.[0]?.data?.[0] || 0}%) are being managed effectively`}
+                    </p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {selectedSources.map((source, index) => (
+                        <div key={index} className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full ${
+                            source.toLowerCase() === 'rally' ? 'bg-blue-500' :
+                            source.toLowerCase() === 'jira' ? 'bg-purple-500' :
+                            'bg-green-500'
+                          } mr-2`}></div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            {source.charAt(0).toUpperCase() + source.slice(1)}: {Math.round(100/selectedSources.length)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                No priority data available
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                  No priority data available
+                </div>
               )}
             </DashboardCard>
           </div>
@@ -996,12 +1491,12 @@ function FailureTrends({ darkMode }) {
         >
           {/* Recent Failures */}
             <DashboardCard
-            title="Recent Failures"
-            subtitle="Latest reported issues"
-            icon={<FileText className="h-5 w-5" />}
-            accentColor="blue"
+            title="Recent Failures Analysis"
+            subtitle="Latest reported issues and their impact"
+            icon={<AlertCircle className="h-5 w-5" />}
+            accentColor="indigo"
             isLoading={loading}
-            onRefresh={loadCSVData}
+            onRefresh={refreshData}
             headerAction={
               recentFailures && recentFailures.length > 0 ? (
                 <AIAnalysisButton 
@@ -1016,48 +1511,95 @@ function FailureTrends({ darkMode }) {
             }
           >
             {recentFailures && recentFailures.length > 0 ? (
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                {recentFailures.map((failure, index) => (
-                  <div 
-                    key={index}
-                    className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                          {failure.title || failure.id || 'Untitled Failure'}
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {failure.description?.substring(0, 100) || 'No description available'}
-                          {failure.description?.length > 100 ? '...' : ''}
-                        </p>
-                        <div className="flex items-center mt-2 space-x-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            (failure.severity || '').toLowerCase() === 'critical' 
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' 
-                              : (failure.severity || '').toLowerCase() === 'high'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                          }`}>
-                            {failure.severity || 'Unknown'}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {recentFailures.slice(0, 6).map((failure, index) => (
+                    <div 
+                      key={index}
+                      className="group relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-100 dark:border-gray-700"
+                    >
+                      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-blue-500 opacity-75"></div>
+                      <div className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                              {failure.title || failure.id || 'Untitled Failure'}
+                            </h4>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                              {failure.description || 'No description available'}
+                            </p>
+                          </div>
+                          <div className="ml-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
+                              (failure.severity || '').toLowerCase() === 'critical' 
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' 
+                                : (failure.severity || '').toLowerCase() === 'high'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                : (failure.severity || '').toLowerCase() === 'medium'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            }`}>
+                              {failure.severity || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 flex items-center justify-between text-xs">
+                          <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>{failure.date ? new Date(failure.date).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'Unknown date'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              (failure.status || '').toLowerCase() === 'resolved'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : (failure.status || '').toLowerCase() === 'in progress'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                            }`}>
+                              {failure.status || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="inline-flex items-center text-xs font-medium text-gray-500 dark:text-gray-400">
+                            <Database className="h-3.5 w-3.5 mr-1" />
+                            {failure.source || 'Unknown Source'}
                           </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {failure.date ? new Date(failure.date).toLocaleDateString() : 'Unknown date'}
-                          </span>
-                          {failure.source && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {failure.source}
+                          {failure.priority && (
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                              Priority: {failure.priority}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {recentFailures.length > 6 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
+                    >
+                      View All Failures
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-60">
-                <p className="text-gray-500 dark:text-gray-400">No recent failures found</p>
+              <div className="flex flex-col items-center justify-center h-60 text-gray-500 dark:text-gray-400">
+                <AlertCircle className="h-8 w-8 mb-2" />
+                <p>No recent failures found</p>
+                <p className="text-sm mt-1">All systems are running smoothly</p>
               </div>
             )}
           </DashboardCard>
@@ -1076,7 +1618,7 @@ function FailureTrends({ darkMode }) {
               icon={<AlertCircle className="h-5 w-5" />}
               accentColor="red"
               isLoading={loading}
-              onRefresh={loadCSVData}
+              onRefresh={refreshData}
               headerAction={
                 sourceStats && Object.keys(sourceStats).length > 0 ? (
                   <AIAnalysisButton 
@@ -1094,26 +1636,11 @@ function FailureTrends({ darkMode }) {
                 <div className="h-80">
               <ChartComponent
                 type="bar"
-                    data={{
-                      labels: ['Critical', 'High', 'Medium', 'Low'],
-                      datasets: Object.entries(sourceStats)
-                        .filter(([source]) => selectedSources.some(s => source.toLowerCase().includes(s.toLowerCase())))
-                        .map(([source, data], index) => ({
-                          label: source,
-                          data: [data.critical, data.high, data.medium, data.low],
-                          backgroundColor: source.toLowerCase().includes('rally') ? 'rgba(59, 130, 246, 0.7)' :
-                                          source.toLowerCase().includes('jira') ? 'rgba(139, 92, 246, 0.7)' :
-                                          'rgba(16, 185, 129, 0.7)',
-                          borderWidth: 0,
-                          borderRadius: 4
-                        }))
-                    }}
-                height={300}
-                    isDarkMode={darkMode}
+                    data={prepareSeverityChartData()}
                 options={{
                   scales: {
                     x: {
-                          stacked: false,
+                          stacked: false
                     },
                     y: {
                           stacked: false,
@@ -1133,7 +1660,7 @@ function FailureTrends({ darkMode }) {
               icon={<AlertTriangle className="h-5 w-5" />}
               accentColor="amber"
               isLoading={loading}
-              onRefresh={loadCSVData}
+              onRefresh={refreshData}
               headerAction={
                 sourceStats && Object.keys(sourceStats).length > 0 ? (
                   <AIAnalysisButton 
@@ -1151,26 +1678,12 @@ function FailureTrends({ darkMode }) {
                 <div className="h-80">
                   <ChartComponent
                     type="bar"
-                    data={{
-                      labels: ['P1', 'P2', 'P3', 'P4'],
-                      datasets: Object.entries(sourceStats)
-                        .filter(([source]) => selectedSources.some(s => source.toLowerCase().includes(s.toLowerCase())))
-                        .map(([source, data], index) => ({
-                          label: source,
-                          data: [data.p1, data.p2, data.p3, data.p4],
-                          backgroundColor: source.toLowerCase().includes('rally') ? 'rgba(59, 130, 246, 0.7)' :
-                                          source.toLowerCase().includes('jira') ? 'rgba(139, 92, 246, 0.7)' :
-                                          'rgba(16, 185, 129, 0.7)',
-                          borderWidth: 0,
-                          borderRadius: 4
-                        }))
-                    }}
+                    data={preparePriorityChartData()}
                     height={300}
-                    isDarkMode={darkMode}
                     options={{
                       scales: {
                         x: {
-                          stacked: false,
+                          stacked: false
                         },
                         y: {
                           stacked: false,

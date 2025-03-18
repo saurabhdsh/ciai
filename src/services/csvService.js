@@ -32,85 +32,36 @@ export const parseCSVFile = (file) => {
  * @param {string} csvString - The CSV string to parse
  * @returns {Array} - Parsed CSV data as an array of objects
  */
-export const parseCSVString = (csvString) => {
-  if (!csvString || typeof csvString !== 'string') {
-    console.warn('Invalid CSV string provided to parseCSVString');
-    return [];
-  }
+export const parseCSVString = (csvText) => {
+  if (!csvText) return [];
 
   try {
-    // Fix line breaks in the header
-    let fixedCsvString = csvString;
-    // Replace "Defect Desc\nription" with "Defect Description"
-    fixedCsvString = fixedCsvString.replace('Defect Desc\nription', 'Defect Description');
-    // Fix other potential line breaks in the data
-    fixedCsvString = fixedCsvString.replace(/,In\n Progress/g, ',In Progress');
-    
-    // Log the first few lines of the fixed CSV for debugging
-    console.log('Fixed CSV first few lines:', fixedCsvString.split('\n').slice(0, 3).join('\n'));
-    
-    // Check if the header contains Severity and Priority columns
-    const firstLine = fixedCsvString.split('\n')[0];
-    console.log('CSV header:', firstLine);
-    
-    const results = Papa.parse(fixedCsvString, {
+    const result = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (header) => {
-        // Log the original header
-        console.log('Original header:', header);
-        
-        // Keep the original header for reference
-        const originalHeader = header;
-        
-        // Convert headers to camelCase for easier access
-        let camelCaseHeader = header
-          .replace(/\s(.)/g, (match, group) => group.toUpperCase())
-          .replace(/\s/g, '')
-          .replace(/^(.)/, (match, group) => group.toLowerCase());
-        
-        // Log the transformed header
-        console.log(`Transformed header: ${originalHeader} -> ${camelCaseHeader}`);
-        
-        return camelCaseHeader;
-      }
+      transformHeader: header => header.trim(),
+      transform: value => value.trim()
     });
 
-    if (results.errors && results.errors.length > 0) {
-      console.error('CSV parsing errors:', results.errors);
-    }
-    
-    // Log the first row of parsed data to see the structure
-    if (results.data && results.data.length > 0) {
-      console.log('First row of parsed data:', results.data[0]);
-      console.log('Keys in first row:', Object.keys(results.data[0]));
-      
-      // Check if Severity and Priority fields are present
-      const hasSeverity = results.data[0].hasOwnProperty('severity') || results.data[0].hasOwnProperty('Severity');
-      const hasPriority = results.data[0].hasOwnProperty('priority') || results.data[0].hasOwnProperty('Priority');
-      
-      console.log('Has Severity field:', hasSeverity);
-      console.log('Has Priority field:', hasPriority);
-      
-      // If Severity or Priority is missing, add them with default values
-      if (!hasSeverity || !hasPriority) {
-        results.data = results.data.map(row => {
-          if (!hasSeverity) {
-            row.severity = 'Medium'; // Default value
-          }
-          if (!hasPriority) {
-            row.priority = 'P3'; // Default value
-          }
-          return row;
-        });
-        
-        console.log('Added missing Severity/Priority fields. Updated first row:', results.data[0]);
-      }
+    if (result.errors.length > 0) {
+      console.warn('CSV parsing errors:', result.errors);
     }
 
-    return results.data;
+    // Ensure all required fields are present
+    return result.data.map(row => ({
+      ID: row.ID || row.id || '',
+      Title: row.Title || row.title || '',
+      Description: row.Description || row.description || '',
+      Date: row.Date || row.date || '',
+      Status: row.Status || row.status || '',
+      Severity: row.Severity || row.severity || '',
+      Priority: row.Priority || row.priority || '',
+      Source: row.Source || row.source || '',
+      'Defect Type': row['Defect Type'] || row.defectType || '',
+      LOB: row.LOB || row.lob || ''
+    }));
   } catch (error) {
-    console.error('Error in parseCSVString:', error);
+    console.error('Error parsing CSV:', error);
     return [];
   }
 };
@@ -211,148 +162,196 @@ export const fetchCSVData = async (sources = []) => {
  */
 export const analyzeFailureTrends = (data) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    console.warn('Invalid data provided to analyzeFailureTrends');
-    return null;
-  }
-
-  try {
-    console.log('analyzeFailureTrends received data:', data.length, 'records');
-    
-    // Group failures by date
-    const failuresByDate = {};
-    let dateFieldsFound = 0;
-    let validDatesFound = 0;
-    
-    // First, check what date field names are available in the data
-    const sampleRow = data[0];
-    const possibleDateFields = ['date', 'Date', 'executionDate', 'Execution Date', 'created', 'Created'];
-    const availableDateFields = possibleDateFields.filter(field => 
-      sampleRow.hasOwnProperty(field) && sampleRow[field]
-    );
-    
-    console.log('Available date fields in data:', availableDateFields);
-    
-    // If no date fields are found in the sample, try to infer from all records
-    if (availableDateFields.length === 0) {
-      console.log('No date fields found in sample, checking all records...');
-      const allFields = new Set();
-    data.forEach(row => {
-        Object.keys(row).forEach(key => allFields.add(key));
-      });
-      console.log('All available fields:', Array.from(allFields));
-      
-      // Look for any field that might contain date information
-      const potentialDateFields = Array.from(allFields).filter(field => 
-        field.toLowerCase().includes('date') || 
-        field.toLowerCase().includes('time') ||
-        field.toLowerCase().includes('created') ||
-        field.toLowerCase().includes('updated')
-      );
-      
-      console.log('Potential date fields:', potentialDateFields);
-      
-      // If we still don't have date fields, create a mock dataset
-      if (potentialDateFields.length === 0) {
-        console.warn('No date fields found in the data, creating mock trend data');
-        return createMockTrendData();
-      }
-    }
-    
-    data.forEach((row, index) => {
-      // Check for various date field names
-      const dateStr = row.date || row.Date || row.executionDate || row['Execution Date'] || '';
-      
-      if (dateStr) {
-        dateFieldsFound++;
-        try {
-          const date = new Date(dateStr);
-        if (!isNaN(date.getTime())) {
-            validDatesFound++;
-            const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
-            failuresByDate[formattedDate] = (failuresByDate[formattedDate] || 0) + 1;
-          } else {
-            console.warn(`Invalid date at index ${index}:`, dateStr);
-          }
-        } catch (e) {
-          console.warn(`Error parsing date at index ${index}: ${dateStr}`, e);
-        }
-      } else if (index < 10) {
-        console.warn(`No date field found at index ${index}. Row data:`, row);
-      }
-    });
-    
-    console.log(`Date processing stats: ${dateFieldsFound} date fields found, ${validDatesFound} valid dates processed`);
-    
-    // Sort dates
-    const sortedDates = Object.keys(failuresByDate).sort();
-    console.log('Sorted dates:', sortedDates);
-    
-    // If no dates were found, return mock data
-    if (sortedDates.length === 0) {
-      console.warn('No date data found for failure trends, creating mock data');
-      return createMockTrendData();
-    }
-    
-    // Create chart data
-    const chartData = {
-      labels: sortedDates,
+    console.log('No data available for trend analysis');
+    return {
+      labels: [],
       datasets: [{
-          label: 'Failures',
-        data: sortedDates.map(date => failuresByDate[date]),
+        label: 'Failures',
+        data: [],
         borderColor: 'rgba(59, 130, 246, 0.8)',
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1,
+        tension: 0.4,
+        fill: false,
         pointRadius: 4,
         pointHoverRadius: 6
       }]
     };
-    
-    console.log('Generated chart data:', chartData);
-    return chartData;
-  } catch (error) {
-    console.error('Error in analyzeFailureTrends:', error);
-    return createMockTrendData();
   }
-};
 
-// Function to create mock trend data when real data is not available
-const createMockTrendData = () => {
-  console.log('Creating mock trend data');
-  
-  // Generate dates for the last 30 days
-  const dates = [];
-  const now = new Date();
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    dates.push(date.toISOString().split('T')[0]);
+  console.log('Analyzing trends for', data.length, 'records');
+
+  // Find the date range in the data
+  let minDate = new Date();
+  let maxDate = new Date(0); // Start with earliest possible date
+
+  data.forEach(failure => {
+    if (failure.Date) {
+      try {
+        const failureDate = new Date(failure.Date);
+        if (!isNaN(failureDate.getTime())) {
+          if (failureDate < minDate) minDate = failureDate;
+          if (failureDate > maxDate) maxDate = failureDate;
+        }
+      } catch (error) {
+        console.error('Error processing date:', failure.Date);
+      }
+    }
+  });
+
+  // If no valid dates found, return empty chart data
+  if (maxDate.getTime() === 0) {
+    console.log('No valid dates found in data');
+    return {
+      labels: [],
+      datasets: [{
+        label: 'Failures',
+        data: [],
+        borderColor: 'rgba(59, 130, 246, 0.8)',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    };
   }
-  
-  // Generate random data for failures
-  const failureData = dates.map(() => Math.floor(Math.random() * 10) + 1);
-  
-  return {
-    labels: dates,
-    datasets: [{
-      label: 'Failures',
-      data: failureData,
-      borderColor: 'rgba(59, 130, 246, 0.8)',
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-      borderWidth: 2,
-      tension: 0.4,
-      fill: true,
-      pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1,
-      pointRadius: 4,
-      pointHoverRadius: 6
-    }]
+
+  console.log('Date range found:', { minDate, maxDate });
+
+  // Create a map to store counts for each date
+  const dateMap = {};
+  let currentDate = new Date(minDate);
+  while (currentDate <= maxDate) {
+    dateMap[currentDate.toISOString().split('T')[0]] = {
+      count: 0,
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0
+    };
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Count failures by date and severity
+  let validDatesProcessed = 0;
+  data.forEach(failure => {
+    if (failure.Date) {
+      try {
+        const failureDate = new Date(failure.Date);
+        if (!isNaN(failureDate.getTime())) {
+          const dateKey = failureDate.toISOString().split('T')[0];
+          if (dateMap.hasOwnProperty(dateKey)) {
+            dateMap[dateKey].count++;
+            
+            // Track severity
+            const severity = (failure.Severity || '').toLowerCase();
+            if (severity.includes('critical')) {
+              dateMap[dateKey].critical++;
+            } else if (severity.includes('high')) {
+              dateMap[dateKey].high++;
+            } else if (severity.includes('medium')) {
+              dateMap[dateKey].medium++;
+            } else if (severity.includes('low')) {
+              dateMap[dateKey].low++;
+            }
+            
+            validDatesProcessed++;
+          }
+        }
+      } catch (error) {
+        console.error('Error processing date:', failure.Date);
+        }
+      }
+    });
+    
+  console.log('Valid dates processed:', validDatesProcessed);
+
+  // Sort dates and prepare chart data
+  const sortedDates = Object.keys(dateMap).sort();
+  const failureCounts = sortedDates.map(date => dateMap[date].count);
+  const criticalCounts = sortedDates.map(date => dateMap[date].critical);
+  const highCounts = sortedDates.map(date => dateMap[date].high);
+  const mediumCounts = sortedDates.map(date => dateMap[date].medium);
+  const lowCounts = sortedDates.map(date => dateMap[date].low);
+
+  // Format dates for display
+  const formattedDates = sortedDates.map(date => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+
+  const chartData = {
+    labels: formattedDates,
+      datasets: [
+        {
+        label: 'Critical Failures',
+        data: criticalCounts,
+        borderColor: 'rgba(239, 68, 68, 0.8)', // Red
+        backgroundColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 2,
+          tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: 'circle',
+        showLine: true, // This ensures lines connect the points
+        type: 'line'
+      },
+      {
+        label: 'High Severity',
+        data: highCounts,
+        borderColor: 'rgba(245, 158, 11, 0.8)', // Orange
+        backgroundColor: 'rgba(245, 158, 11, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: 'triangle',
+        showLine: true,
+        type: 'line'
+      },
+      {
+        label: 'Medium Severity',
+        data: mediumCounts,
+        borderColor: 'rgba(59, 130, 246, 0.8)', // Blue
+        backgroundColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: 'rect',
+        showLine: true,
+        type: 'line'
+      },
+      {
+        label: 'Low Severity',
+        data: lowCounts,
+        borderColor: 'rgba(16, 185, 129, 0.8)', // Green
+        backgroundColor: 'rgba(16, 185, 129, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: 'star',
+        showLine: true,
+        type: 'line'
+      }
+    ]
   };
+
+  console.log('Generated trend chart data:', {
+    dateCount: sortedDates.length,
+    totalFailures: failureCounts.reduce((a, b) => a + b, 0),
+    sampleDates: formattedDates.slice(0, 3),
+    sampleCounts: failureCounts.slice(0, 3)
+  });
+
+  return chartData;
 };
 
 /**
@@ -822,41 +821,30 @@ export const getAIInsights = (data) => {
  */
 export const getRecentFailures = (data, limit = 10) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    console.warn('Invalid data provided to getRecentFailures');
+    console.log('No data available for recent failures');
     return [];
   }
 
-  try {
-    // Sort by date (most recent first)
-    const sortedData = [...data].sort((a, b) => {
-      const dateA = new Date(a.date || a.Date || a.executionDate || '');
-      const dateB = new Date(b.date || b.Date || b.executionDate || '');
-      return dateB - dateA;
-    });
-    
-    // Take the most recent failures up to the limit
-    const recentFailures = sortedData.slice(0, limit).map(item => {
-      // Normalize the data structure to ensure consistent field names
-      return {
-        id: item.id || item.ID || '',
-        title: item.title || item.Title || item.testCaseName || 'Untitled',
-        description: item.description || item.Description || item.defectDescription || '',
-        date: item.date || item.Date || item.executionDate || '',
-        status: item.status || item.Status || item.defectStatus || '',
-        severity: item.severity || item.Severity || '',
-        priority: item.priority || item.Priority || '',
-        defectType: item.defectType || item['Defect Type'] || '',
-        lob: item.lob || item.LOB || '',
-        source: item.source || item.Source || '',
-        resolvedDate: item.resolvedDate || item['Resolved Date'] || ''
-      };
-    });
-    
-    return recentFailures;
-  } catch (error) {
-    console.error('Error in getRecentFailures:', error);
-    return [];
-  }
+  // Create a copy and sort by date
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = new Date(a.Date);
+    const dateB = new Date(b.Date);
+    return dateB - dateA;
+  });
+
+  // Take the most recent failures
+  const recentFailures = sortedData.slice(0, limit).map(failure => ({
+    id: failure.ID,
+    title: failure.Title,
+    description: failure.Description,
+    date: failure.Date,
+    severity: failure.Severity,
+    status: failure.Status,
+    source: failure.Source
+  }));
+
+  console.log(`Retrieved ${recentFailures.length} recent failures`);
+  return recentFailures;
 };
 
 /**
@@ -931,7 +919,7 @@ export const getSummaryStats = (data) => {
     return {
       totalFailures,
       criticalFailures,
-      highPriorityFailures,
+      highPriorityFailures: highPriorityFailures,
       resolvedFailures,
       avgResolutionTime
     };
@@ -1382,87 +1370,40 @@ export const getDateRangeOptions = () => {
  */
 export const getSourceStats = (data) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    console.warn('Invalid data provided to getSourceStats');
     return {};
   }
 
-  try {
-    const sources = {};
+  const stats = {};
+  data.forEach(item => {
+    const source = item.Source || item.source || 'Unknown';
+    if (!stats[source]) {
+      stats[source] = {
+        total: 0,
+        critical: 0,
+        resolved: 0,
+        open: 0,
+        inProgress: 0
+      };
+    }
+
+    stats[source].total++;
     
-    // Group data by source
-    data.forEach(row => {
-      const source = (row.source || row.Source || 'Unknown').trim();
-      
-      if (!sources[source]) {
-        sources[source] = {
-          total: 0,
-          open: 0,
-          inProgress: 0,
-          resolved: 0,
-          critical: 0,
-          high: 0,
-          medium: 0,
-          low: 0,
-          p1: 0,
-          p2: 0,
-          p3: 0,
-          p4: 0,
-          defectTypes: {},
-          lobs: {}
-        };
-      }
-      
-      // Count total
-      sources[source].total++;
-      
-      // Count by status
-      const status = (row.status || row.Status || '').toLowerCase();
-      if (status.includes('open')) {
-        sources[source].open++;
-      } else if (status.includes('progress')) {
-        sources[source].inProgress++;
-      } else if (status.includes('resolved') || status.includes('closed')) {
-        sources[source].resolved++;
-      }
-      
-      // Count by severity
-      const severity = (row.severity || row.Severity || '').toLowerCase();
-      if (severity.includes('critical')) {
-        sources[source].critical++;
-      } else if (severity.includes('high')) {
-        sources[source].high++;
-      } else if (severity.includes('medium') || severity.includes('med')) {
-        sources[source].medium++;
-      } else if (severity.includes('low')) {
-        sources[source].low++;
-      }
-      
-      // Count by priority
-      const priority = (row.priority || row.Priority || '').toLowerCase();
-      if (priority.includes('p1') || priority.includes('1')) {
-        sources[source].p1++;
-      } else if (priority.includes('p2') || priority.includes('2')) {
-        sources[source].p2++;
-      } else if (priority.includes('p3') || priority.includes('3')) {
-        sources[source].p3++;
-      } else if (priority.includes('p4') || priority.includes('4')) {
-        sources[source].p4++;
-      }
-      
-      // Count by defect type
-      const defectType = row.defectType || row['Defect Type'] || 'Unknown';
-      sources[source].defectTypes[defectType] = (sources[source].defectTypes[defectType] || 0) + 1;
-      
-      // Count by LOB
-      const lob = row.lob || row.LOB || 'Unknown';
-      sources[source].lobs[lob] = (sources[source].lobs[lob] || 0) + 1;
-    });
-    
-    return sources;
-  } catch (error) {
-    console.error('Error in getSourceStats:', error);
-    return {};
-  }
+    const severity = (item.Severity || item.severity || '').toLowerCase();
+    if (severity === 'critical') {
+      stats[source].critical++;
+    }
+
+    const status = (item.Status || item.status || '').toLowerCase();
+    if (status === 'resolved') {
+      stats[source].resolved++;
+    } else if (status === 'open') {
+      stats[source].open++;
+    } else if (status === 'in progress') {
+      stats[source].inProgress++;
+    }
+  });
+
+  return stats;
 };
 
 /**
@@ -1472,96 +1413,40 @@ export const getSourceStats = (data) => {
  */
 export const analyzeDefectStatus = (data) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    console.warn('Invalid data provided to analyzeDefectStatus');
-    return createSampleStatusData();
-  }
-
-  try {
-    console.log('Analyzing defect status distribution for', data.length, 'items');
-    
-    // Count defects by status
-    const statusCounts = {};
-    
-    data.forEach(item => {
-      // Normalize status field name
-      const status = (item.status || item.Status || '').trim();
-      
-      if (status) {
-        // Normalize status values
-        let normalizedStatus = status.toLowerCase();
-        
-        // Group similar statuses
-        if (normalizedStatus.includes('open') || normalizedStatus.includes('new')) {
-          normalizedStatus = 'Open';
-        } else if (normalizedStatus.includes('in progress') || normalizedStatus.includes('in-progress') || normalizedStatus.includes('assigned')) {
-          normalizedStatus = 'In Progress';
-        } else if (normalizedStatus.includes('resolved') || normalizedStatus.includes('fixed') || normalizedStatus.includes('done')) {
-          normalizedStatus = 'Resolved';
-        } else if (normalizedStatus.includes('closed')) {
-          normalizedStatus = 'Closed';
-        } else {
-          normalizedStatus = 'Other';
-        }
-        
-        statusCounts[normalizedStatus] = (statusCounts[normalizedStatus] || 0) + 1;
-      }
-    });
-    
-    // If no status data found, return sample data
-    if (Object.keys(statusCounts).length === 0) {
-      console.warn('No status data found in dataset');
-      return createSampleStatusData();
-    }
-    
-    // Convert to chart format
-    const statusOrder = ['Open', 'In Progress', 'Resolved', 'Closed', 'Other'];
-    const statusColors = {
-      'Open': '#FF6384',
-      'In Progress': '#36A2EB',
-      'Resolved': '#4BC0C0',
-      'Closed': '#97BBCD',
-      'Other': '#9966FF'
-    };
-    
-    // Sort by predefined order
-    const labels = Object.keys(statusCounts)
-      .sort((a, b) => statusOrder.indexOf(a) - statusOrder.indexOf(b));
-    
-    const data = labels.map(label => statusCounts[label]);
-    const backgroundColor = labels.map(label => statusColors[label] || '#CCCCCC');
-    
+    console.log('No data available for defect status analysis');
     return {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor,
-          borderWidth: 1
-        }
-      ]
+      labels: ['Open', 'In Progress', 'Resolved'],
+      datasets: [{
+        data: [0, 0, 0],
+        backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+      }]
     };
-  } catch (error) {
-    console.error('Error in analyzeDefectStatus:', error);
-    return createSampleStatusData();
   }
-};
 
-/**
- * Create sample data for defect status distribution
- * @returns {Object} - Sample chart data
- */
-function createSampleStatusData() {
-  return {
-    labels: ['Open', 'In Progress', 'Resolved', 'Closed'],
-    datasets: [
-      {
-        data: [25, 18, 32, 15],
-        backgroundColor: ['#FF6384', '#36A2EB', '#4BC0C0', '#97BBCD'],
-        borderWidth: 1
-      }
-    ]
+  // Count failures by status
+  const statusCounts = {
+    'Open': 0,
+    'In Progress': 0,
+    'Resolved': 0
   };
-}
+
+  data.forEach(failure => {
+    const status = failure.Status;
+    if (status && statusCounts.hasOwnProperty(status)) {
+      statusCounts[status]++;
+    }
+  });
+
+  console.log('Status counts:', statusCounts);
+
+  return {
+    labels: Object.keys(statusCounts),
+    datasets: [{
+      data: Object.values(statusCounts),
+      backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+    }]
+  };
+};
 
 // Create a mock dataset if the CSV parsing fails
 const createMockData = () => {
@@ -2028,7 +1913,11 @@ export const calculateMetrics = (failures) => {
       totalDefects: 0,
       majorIssues: 0,
       serviceNowIncidents: 0,
-      criticalBugs: 0
+      criticalBugs: 0,
+      resolvedFailures: 0,
+      avgResolutionTime: 0,
+      totalFailures: 0,
+      criticalFailures: 0
     };
   }
 

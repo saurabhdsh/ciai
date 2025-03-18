@@ -41,4 +41,238 @@
 .animate-gradient {
   animation: gradient 15s ease infinite;
   background-size: 400% 400%;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Fade in up animation */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+/* Typing animation */
+@keyframes typing {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-typing {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 1.5s steps(40, end);
+}
+
+/* Thinking dots animation */
+@keyframes thinking-dots {
+  0%, 20% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-thinking-dots {
+  animation: thinking-dots 1.4s infinite;
+}
+
+.animate-thinking-dots-1 {
+  animation-delay: 0s;
+}
+
+.animate-thinking-dots-2 {
+  animation-delay: 0.2s;
+}
+
+.animate-thinking-dots-3 {
+  animation-delay: 0.4s;
+}
+
+/* Animations for AI Assistant Component */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes progressIndigo {
+  0% { width: 0%; }
+  100% { width: 75%; }
+}
+
+@keyframes progressBlue {
+  0% { width: 0%; }
+  100% { width: 60%; }
+}
+
+@keyframes progressGreen {
+  0% { width: 0%; }
+  100% { width: 40%; }
+}
+
+/* Apply animations to components */
+.chat-interface {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.ai-assistant-popup {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Loading animations */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-progressIndigo {
+  animation: progressIndigo 2s ease-out forwards;
+}
+
+.animate-progressBlue {
+  animation: progressBlue 2.5s ease-out forwards;
+}
+
+.animate-progressGreen {
+  animation: progressGreen 3s ease-out forwards;
+}
+
+/* Thinking animation dots */
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25%); }
+}
+
+/* Fade in effect for AI Assistant button */
+.ai-assistant-button {
+  animation: fadeIn 0.3s ease-out;
+  transition: all 0.2s ease-in-out;
+}
+
+.ai-assistant-button:hover {
+  transform: scale(1.05);
+}
+
+/* Modal animations */
+.ai-modal-backdrop {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.ai-modal-content {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Additional animations for AI Assistant */
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.ai-assistant-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes glowing {
+  0% { box-shadow: 0 0 5px rgba(123, 104, 238, 0.6); }
+  50% { box-shadow: 0 0 20px rgba(123, 104, 238, 0.9); }
+  100% { box-shadow: 0 0 5px rgba(123, 104, 238, 0.6); }
+}
+
+.ai-assistant-glow {
+  animation: glowing 3s ease-in-out infinite;
+}
+
+/* Tab animations */
+@keyframes fadeInSlideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-slide-down {
+  animation: fadeInSlideDown 0.3s ease-out forwards;
+}
+
+/* Loading effect for AI thinking */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 800px 104px;
+  animation: shimmer 2s infinite linear;
 } 

@@ -1,14 +1,21 @@
 {
-  "name": "failure-analysis-dashboard",
+  "name": "react-failure",
   "version": "0.1.0",
   "private": true,
   "homepage": "https://saurabhdsh.github.io/ciai",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@headlessui/react": "^2.2.0",
+    "@mui/material": "^6.4.7",
+    "@mui/system": "^6.4.7",
+    "@mui/x-charts": "^7.27.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "antd": "^5.24.4",
     "chart.js": "^4.0.0",
+    "date-fns": "^4.1.0",
     "framer-motion": "^10.18.0",
     "lucide-react": "^0.309.0",
     "papaparse": "^5.5.2",
@@ -18,6 +25,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.21.1",
     "react-scripts": "5.0.1",
+    "recharts": "^2.15.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
