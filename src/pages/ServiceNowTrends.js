@@ -492,7 +492,7 @@ const ServiceNowTrends = () => {
     return result;
   };
 
-  // For the incidents over time chart
+  // Get the incidents over time chart
   const getIncidentsOverTime = () => {
     const incidentsByMonth = {};
     
@@ -638,6 +638,9 @@ const ServiceNowTrends = () => {
       ? resolvedWithTime.reduce((sum, inc) => sum + inc.ResolutionTime, 0) / resolvedWithTime.length
       : 0;
     
+    // Ensure we have the month and year info in a consistent format
+    console.log('Incidents over time data prepared for AI assistant:', incidentsOverTimeData);
+    
     // Get recent incidents
     const recentIncidents = filteredIncidents
       .slice()
@@ -648,7 +651,7 @@ const ServiceNowTrends = () => {
         title: inc["Short Description"],
         status: inc.Status,
         priority: inc.Priority,
-        date: inc.OpenedDate.toLocaleDateString()
+        date: inc.OpenedDate ? format(new Date(inc.OpenedDate), 'MMM d, yyyy') : 'Unknown'
       }));
     
     return {

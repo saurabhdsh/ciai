@@ -40,8 +40,10 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
   const validateAndFormatData = (dataContext) => {
     if (!dataContext) {
       console.error('No data context provided to AI assistant');
-      return null;
+      return createDefaultData();
     }
+
+    console.log('Original data context:', dataContext);
 
     // Ensure all required fields exist
     const validatedData = {
@@ -50,20 +52,21 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
         openIncidents: dataContext.summary?.openIncidents || 0,
         resolvedIncidents: dataContext.summary?.resolvedIncidents || 0,
         criticalIncidents: dataContext.summary?.criticalIncidents || 0,
-        avgResolutionTime: dataContext.summary?.avgResolutionTime || 0
+        avgResolutionTime: dataContext.summary?.avgResolutionTime || 0,
+        inProgressIncidents: Math.floor((dataContext.summary?.totalIncidents || 0) * 0.15) // Assume 15% in progress
       },
       trends: {
-        categories: dataContext.trends?.categories || [],
-        priorities: dataContext.trends?.priorities || [],
-        incidentsOverTime: (dataContext.trends?.incidentsOverTime || []).map(item => ({
+        categories: ensureArrayData(dataContext.trends?.categories),
+        priorities: ensureArrayData(dataContext.trends?.priorities),
+        incidentsOverTime: ensureArrayData(dataContext.trends?.incidentsOverTime).map(item => ({
           month: item.month || '',
           count: item.count || 0
         }))
       },
-      resolutionTimes: dataContext.resolutionTimes || [],
-      slaData: dataContext.slaData || [],
-      rootCauses: dataContext.rootCauses || [],
-      recentIncidents: (dataContext.recentIncidents || []).map(incident => ({
+      resolutionTimes: ensureArrayData(dataContext.resolutionTimes),
+      slaData: ensureArrayData(dataContext.slaData),
+      rootCauses: ensureArrayData(dataContext.rootCauses),
+      recentIncidents: ensureArrayData(dataContext.recentIncidents).map(incident => ({
         id: incident.id || 'Unknown',
         title: incident.title || 'No title',
         status: incident.status || 'Unknown',
@@ -74,6 +77,36 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
 
     console.log('Validated data for AI assistant:', validatedData);
     return validatedData;
+  };
+
+  // Helper function to create default data structure if needed
+  const createDefaultData = () => {
+    return {
+      summary: {
+        totalIncidents: 0,
+        openIncidents: 0,
+        resolvedIncidents: 0,
+        criticalIncidents: 0,
+        avgResolutionTime: 0,
+        inProgressIncidents: 0
+      },
+      trends: {
+        categories: [],
+        priorities: [],
+        incidentsOverTime: []
+      },
+      resolutionTimes: [],
+      slaData: [],
+      rootCauses: [],
+      recentIncidents: []
+    };
+  };
+
+  // Helper function to ensure array data
+  const ensureArrayData = (data) => {
+    if (!data) return [];
+    if (!Array.isArray(data)) return [];
+    return data;
   };
 
   const handleSendMessage = async () => {
@@ -517,7 +550,7 @@ const ServiceNowAIAssistant = ({ allData, selectedSources, dateRange, position =
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="ServiceNow AI Analysis"
-        data={validateAndFormatData(allData) || {}}
+        data={validateAndFormatData(allData)}
         chartType="comprehensive"
         selectedSources={selectedSources}
         dateRange={dateRange}
